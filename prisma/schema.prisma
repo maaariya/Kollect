@@ -15,21 +15,33 @@ datasource db {
 }
 
 model User {
-  id        Int      @id @default(autoincrement())
-  name      String
-  email     String   @unique
-  cards     Card[]
-  createdAt DateTime @default(now())
+  id       Int            @id @default(autoincrement())
+  name     String
+  email    String         @unique
+  password String
+  cards    UserCard[]     // User’s personal collection
 }
 
 model Card {
-  id        Int      @id @default(autoincrement())
-  name      String
-  member    String
-  group     String
-  album     String
-  image     String?
-  ownerId   Int
-  owner     User     @relation(fields: [ownerId], references: [id])
+  id       Int        @id @default(autoincrement())
+  name     String
+  member   String
+  group    String
+  album    String
+  image    String?
+  
   createdAt DateTime @default(now())
+  users     UserCard[]   // Users that own this card
+}
+
+// JOIN TABLE — allows many-to-many user <-> card
+model UserCard {
+  id      Int   @id @default(autoincrement())
+  userId  Int
+  cardId  Int
+
+  user User @relation(fields: [userId], references: [id])
+  card Card @relation(fields: [cardId], references: [id])
+
+  @@unique([userId, cardId]) // Prevent duplicates
 }
