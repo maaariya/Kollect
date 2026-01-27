@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
-
+import Navbar from "@/app/components/Navbar";
 export const metadata: Metadata = {
   title: "Kollect",
   description: "A cute K-Pop photocard trading app",
@@ -22,6 +22,7 @@ export default function RootLayout({
       </head>
 
       <body className="antialiased font-righteous">
+         <Navbar />
         {/* Floating hearts */}
         <div className="heart"></div>
         <div className="heart"></div>
@@ -33,3 +34,4 @@ export default function RootLayout({
     </html>
   );
 }
+
