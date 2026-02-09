@@ -1,16 +1,18 @@
-import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { NextResponse } from "next/server";
 import jwt from "jsonwebtoken";
 
-const JWT_SECRET = process.env.JWT_SECRET!;
+function getUserId(req: Request): number | null {
+  const auth = req.headers.get("authorization");
+  if (!auth) return null;
 
-function getUserIdFromRequest(req: Request): number | null {
-  const authHeader = req.headers.get("authorization");
-  if (!authHeader) return null;
+  const token = auth.split(" ")[1];
+  if (!token) return null;
 
   try {
-    const token = authHeader.replace("Bearer ", "");
-    const decoded = jwt.verify(token, JWT_SECRET) as { id: number };
+    const decoded = jwt.verify(token, process.env.JWT_SECRET!) as {
+      id: number;
+    };
     return decoded.id;
   } catch {
     return null;
@@ -18,16 +20,19 @@ function getUserIdFromRequest(req: Request): number | null {
 }
 
 export async function POST(req: Request) {
-  const userId = getUserIdFromRequest(req);
-
+  const userId = getUserId(req);
   if (!userId) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   const { cardId } = await req.json();
 
+  if (!cardId) {
+    return NextResponse.json({ error: "Missing cardId" }, { status: 400 });
+  }
+
   try {
-    // Add to collection (safe if already exists)
+    // 1. Add to collection (ignore if already exists)
     await prisma.userCard.upsert({
       where: {
         userId_cardId: {
@@ -42,17 +47,19 @@ export async function POST(req: Request) {
       },
     });
 
-    // Remove from wishlist
-    await prisma.wishlistCard.deleteMany({
+    // 2. REMOVE from wishlist
+    await prisma.wishlistCard.delete({
       where: {
-        userId,
-        cardId,
+        userId_cardId: {
+          userId,
+          cardId,
+        },
       },
     });
 
     return NextResponse.json({ success: true });
-  } catch (error) {
-    console.error(error);
+  } catch (err) {
+    console.error(err);
     return NextResponse.json(
       { error: "Failed to move card" },
       { status: 500 }
