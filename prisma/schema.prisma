@@ -1,13 +1,6 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
-
 generator client {
   provider = "prisma-client-js"
 }
-
 
 datasource db {
   provider = "postgresql"
@@ -15,27 +8,37 @@ datasource db {
 }
 
 model User {
-  id       Int            @id @default(autoincrement())
+  id       Int        @id @default(autoincrement())
   name     String
-  email    String         @unique
+  email    String     @unique
   password String
-  cards    UserCard[]     // User’s personal collection
+  cards    UserCard[]
+  wishlist WishlistCard[]
 }
 
 model Card {
-  id       Int        @id @default(autoincrement())
-  name     String
-  member   String
-  group    String
-  album    String
-  image    String?
-  
-  createdAt DateTime @default(now())
-  users     UserCard[]   // Users that own this card
+  id        Int        @id @default(autoincrement())
+  name      String
+  member    String
+  group     String
+  album     String
+  image     String?
+  createdAt DateTime   @default(now())
+  users     UserCard[]
+  wishlistedBy WishlistCard[]
 }
 
-// JOIN TABLE — allows many-to-many user <-> card
 model UserCard {
+  id     Int  @id @default(autoincrement())
+  userId Int
+  cardId Int
+  card   Card @relation(fields: [cardId], references: [id])
+  user   User @relation(fields: [userId], references: [id])
+
+  @@unique([userId, cardId])
+}
+
+model WishlistCard {
   id      Int   @id @default(autoincrement())
   userId  Int
   cardId  Int
@@ -43,5 +46,5 @@ model UserCard {
   user User @relation(fields: [userId], references: [id])
   card Card @relation(fields: [cardId], references: [id])
 
-  @@unique([userId, cardId]) // Prevent duplicates
+  @@unique([userId, cardId])
 }

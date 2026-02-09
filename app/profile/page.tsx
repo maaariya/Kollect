@@ -14,7 +14,7 @@ type UserCard = {
   id: number;
   userId: number;
   cardId: number;
-  card: Card; // ⭐ attached card data
+  card: Card;
 };
 
 type User = {
@@ -29,7 +29,7 @@ const ProfilePage = async () => {
     include: {
       cards: {
         include: {
-          card: true, // ⭐ fetch actual card
+          card: true,
         },
       },
     },
@@ -85,12 +85,22 @@ const ProfilePage = async () => {
         </div>
       )}
 
-      <a
-        href="/add-card"
-        className="inline-block bg-pink-500 text-white px-4 py-2 mt-4 rounded-xl shadow hover:bg-pink-600 transition"
-      >
-        + Add Card
-      </a>
+      {/* Action buttons */}
+      <div className="flex gap-2 mt-4">
+        <a
+          href="/add-card"
+          className="bg-pink-500 text-white px-4 py-2 rounded-xl shadow hover:bg-pink-600 transition"
+        >
+          + Add Card
+        </a>
+
+        <a
+          href="/add-wishlist"
+          className="bg-pink-400 text-white px-4 py-2 rounded-xl shadow hover:bg-pink-500 transition"
+        >
+          + Add to Wishlist
+        </a>
+      </div>
     </div>
   );
 };
