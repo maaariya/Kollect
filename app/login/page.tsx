@@ -6,78 +6,77 @@ import { useRouter } from "next/navigation";
 export default function LoginPage() {
   const router = useRouter();
 
-  const [form, setForm] = useState({ email: "", password: "" });
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [message, setMessage] = useState("");
-  const [loading, setLoading] = useState(false);
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
     setMessage("");
 
     try {
       const res = await fetch("/api/users/auth/login", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(form),
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ email, password }),
+        credentials: "include", // important
       });
 
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Login failed");
 
-      // store JWT
-      localStorage.setItem("token", data.token);
+      if (!res.ok) {
+        setMessage(data.error || "Login failed");
+        return;
+      }
 
-      // REDIRECT TO PROFILE PAGE
-      router.push("/profile");
-
-    } catch (error: any) {
-      setMessage(` ${error.message}`);
-    } finally {
-      setLoading(false);
+      // 🔥 THIS IS THE IMPORTANT PART
+      router.refresh();   // forces server layout to re-read cookies
+      router.push("/");   // navigate after refresh
+    } catch (err) {
+      setMessage("Something went wrong.");
     }
   };
 
   return (
-    <div className="flex justify-center items-center min-h-screen bg-primary-light font-cute">
+    <div className="min-h-screen flex items-center justify-center">
       <form
-        onSubmit={handleSubmit}
-        className="flex flex-col gap-4 p-8 rounded-xl-bubble shadow-2xl bg-secondary-light w-96"
+        onSubmit={handleLogin}
+        className="bg-white p-8 rounded-2xl shadow-lg w-full max-w-md"
       >
-        <h1 className="text-3xl font-bold text-pink-dark text-center mb-2">
+        <h1 className="text-3xl font-bold mb-6 text-center text-pink-500">
           Login
         </h1>
+
+        {message && (
+          <p className="text-red-500 mb-4 text-center">{message}</p>
+        )}
 
         <input
           type="email"
           placeholder="Email"
-          value={form.email}
-          onChange={(e) => setForm({ ...form, email: e.target.value })}
-          className="border-2 border-pink-light rounded-xl-bubble p-3 focus:outline-none focus:ring-2 focus:ring-pink-medium bg-pink-light placeholder-pink-dark"
+          className="w-full mb-4 p-3 border rounded-xl"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
           required
         />
 
         <input
           type="password"
           placeholder="Password"
-          value={form.password}
-          onChange={(e) => setForm({ ...form, password: e.target.value })}
-          className="border-2 border-pink-light rounded-xl-bubble p-3 focus:outline-none focus:ring-2 focus:ring-pink-medium bg-pink-light placeholder-pink-dark"
+          className="w-full mb-6 p-3 border rounded-xl"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
           required
         />
 
         <button
-          disabled={loading}
-          className="bg-pink-medium text-white rounded-xl-bubble p-3 hover:bg-pink-light shadow-lg transition-colors duration-200"
+          type="submit"
+          className="w-full bg-pink-500 text-white py-3 rounded-xl hover:bg-pink-600 transition"
         >
-          {loading ? "Logging in..." : "Login"}
+          Login
         </button>
-
-        {message && (
-          <p className="text-center text-pink-dark font-semibold mt-2">
-            {message}
-          </p>
-        )}
       </form>
     </div>
   );

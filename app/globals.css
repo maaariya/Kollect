@@ -116,7 +116,7 @@ form {
   border-radius: var(--bubble-radius);
 }
 
-/* Cute scrollbars */
+/* Scrollbars */
 ::-webkit-scrollbar {
   width: 10px;
 }
@@ -130,4 +130,59 @@ form {
 }
 ::-webkit-scrollbar-thumb:hover {
   background: #FFCAD4;
+}
+
+/* homepage scrolling cards */
+@keyframes scrollCards {
+  0% {
+    transform: translateY(0%);
+  }
+  100% {
+    transform: translateY(-50%);
+  }
+}
+
+.animate-scroll {
+  display: flex;
+  flex-direction: column;
+  animation: scrollCards 40s linear infinite;
+}
+
+@keyframes scrollCards {
+  0% {
+    transform: translateY(0%);
+  }
+  100% {
+    transform: translateY(-50%);
+  }
+}
+
+.animate-scroll {
+  animation: scrollCards 40s linear infinite;
+}
+
+@keyframes scrollUp {
+  0% {
+    transform: translateY(0%);
+  }
+  100% {
+    transform: translateY(-50%);
+  }
+}
+
+@keyframes scrollDown {
+  0% {
+    transform: translateY(-50%);
+  }
+  100% {
+    transform: translateY(0%);
+  }
+}
+
+.animate-scroll-up {
+  animation: scrollUp 15s linear infinite;
+}
+
+.animate-scroll-down {
+  animation: scrollDown 15s linear infinite;
 }

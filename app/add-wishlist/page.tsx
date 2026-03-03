@@ -1,4 +1,4 @@
-"use client";
+"use client"; // Make sure this is at the very top
 
 import { useEffect, useState } from "react";
 
@@ -31,17 +31,10 @@ export default function AddWishlistPage() {
   async function addToWishlist(cardId: number) {
     setMessage("");
 
-    const token = localStorage.getItem("token");
-    if (!token) {
-      setMessage("You must be logged in!");
-      return;
-    }
-
     const res = await fetch("/api/wishlist", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        Authorization: "Bearer " + token,
       },
       body: JSON.stringify({ cardId }),
     });
@@ -55,10 +48,8 @@ export default function AddWishlistPage() {
     }
   }
 
-  // --- FILTERED CARDS ---
   const filteredCards = cards.filter((card) => {
     const term = search.toLowerCase();
-
     if (filterBy === "all") {
       return (
         card.name.toLowerCase().includes(term) ||
@@ -67,7 +58,6 @@ export default function AddWishlistPage() {
         card.album.toLowerCase().includes(term)
       );
     }
-
     return card[filterBy as "member" | "group" | "album"]
       .toLowerCase()
       .includes(term);
@@ -80,12 +70,9 @@ export default function AddWishlistPage() {
       </h1>
 
       {message && (
-        <p className="text-center font-bold text-pink-dark mb-4">
-          {message}
-        </p>
+        <p className="text-center font-bold text-pink-dark mb-4">{message}</p>
       )}
 
-      {/* --- SEARCH + FILTERS --- */}
       <div className="flex justify-center gap-3 mb-6">
         <input
           type="text"
@@ -107,7 +94,6 @@ export default function AddWishlistPage() {
         </select>
       </div>
 
-      {/* --- CARDS --- */}
       <div className="flex flex-wrap gap-y-6 gap-x-3">
         {filteredCards.map((card) => (
           <div
@@ -123,19 +109,15 @@ export default function AddWishlistPage() {
               alt={card.name}
               className="w-full h-48 object-cover rounded-xl mb-2 shadow-sm"
             />
-
             <p className="font-semibold text-sm text-center text-pink-700">
               {card.name}
             </p>
-
             <p className="text-pink-500 text-xs text-center">
               {card.member} — {card.group}
             </p>
-
             <p className="text-pink-400 text-[11px] italic text-center">
               {card.album}
             </p>
-
             <button
               className="mt-2 bg-pink-400 text-white px-4 py-1.5 rounded-xl shadow 
                 hover:bg-pink-500 transition text-sm"

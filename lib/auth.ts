@@ -1,19 +1,19 @@
 import jwt from "jsonwebtoken";
 
-export function getUserIdFromRequest(req: Request): number | null {
-  const authHeader = req.headers.get("authorization");
-
+export function getUserIdFromToken(authHeader?: string) {
   if (!authHeader) return null;
 
   const token = authHeader.replace("Bearer ", "");
 
   try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET!) as {
-      id: number;
-    };
+    const payload = jwt.verify(
+      token,
+      process.env.JWT_SECRET!
+    ) as { id: number };
 
-    return decoded.id;
+    return payload.id;
   } catch {
     return null;
   }
 }
+

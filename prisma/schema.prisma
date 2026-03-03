@@ -8,23 +8,30 @@ datasource db {
 }
 
 model User {
-  id       Int        @id @default(autoincrement())
-  name     String
-  email    String     @unique
-  password String
-  cards    UserCard[]
-  wishlist WishlistCard[]
+  id                     Int            @id @default(autoincrement())
+  name                   String
+  email                  String         @unique
+  password               String
+  bio                    String?
+  phone                  String?
+  avatarUrl              String?
+  receivedFriendRequests Friendship[]   @relation("ReceivedRequests")
+  sentFriendRequests     Friendship[]   @relation("SentRequests")
+  receivedMessages       Message[]      @relation("receivedMessages")
+  sentMessages           Message[]      @relation("sentMessages")
+  cards                  UserCard[]
+  wishlist               WishlistCard[]
 }
 
 model Card {
-  id        Int        @id @default(autoincrement())
-  name      String
-  member    String
-  group     String
-  album     String
-  image     String?
-  createdAt DateTime   @default(now())
-  users     UserCard[]
+  id           Int            @id @default(autoincrement())
+  name         String
+  member       String
+  group        String
+  album        String
+  image        String?
+  createdAt    DateTime       @default(now())
+  users        UserCard[]
   wishlistedBy WishlistCard[]
 }
 
@@ -39,12 +46,33 @@ model UserCard {
 }
 
 model WishlistCard {
-  id      Int   @id @default(autoincrement())
-  userId  Int
-  cardId  Int
-
-  user User @relation(fields: [userId], references: [id])
-  card Card @relation(fields: [cardId], references: [id])
+  id     Int  @id @default(autoincrement())
+  userId Int
+  cardId Int
+  card   Card @relation(fields: [cardId], references: [id])
+  user   User @relation(fields: [userId], references: [id])
 
   @@unique([userId, cardId])
+}
+
+model Friendship {
+  id          Int       @id @default(autoincrement())
+  requesterId Int?
+  recipientId Int?
+  createdAt   DateTime? @db.Date
+  status      String?   @default("pending")
+  recipient   User?     @relation("ReceivedRequests", fields: [recipientId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_friendship_recipient")
+  requester   User?     @relation("SentRequests", fields: [requesterId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_friendship_requester")
+
+  @@unique([requesterId, recipientId], map: "uq_friendship_requester_recipient")
+}
+
+model Message {
+  id         Int       @id @default(autoincrement())
+  senderId   Int
+  receiverId Int
+  content    String
+  createdAt  DateTime? @default(now()) @db.Timestamp(6)
+  receiver   User      @relation("receivedMessages", fields: [receiverId], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_receiver")
+  sender     User      @relation("sentMessages", fields: [senderId], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_sender")
 }

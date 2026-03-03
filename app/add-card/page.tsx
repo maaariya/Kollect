@@ -14,44 +14,50 @@ type Card = {
 export default function AddCardPage() {
   const [cards, setCards] = useState<Card[]>([]);
   const [message, setMessage] = useState("");
-
-  // NEW FILTER STATES
   const [search, setSearch] = useState("");
   const [filterBy, setFilterBy] = useState("all");
 
+  // Load all available cards
   useEffect(() => {
     async function load() {
-      const res = await fetch("/api/cards/list");
-      const data = await res.json();
-      setCards(data.cards || []);
+      try {
+        const res = await fetch("/api/cards/list");
+        const data = await res.json();
+        setCards(data.cards || []);
+      } catch {
+        setCards([]);
+      }
     }
+
     load();
   }, []);
 
+  // ✅ Cookie-based add
   async function addToCollection(cardId: number) {
     setMessage("");
 
-    const token = localStorage.getItem("token");
-    if (!token) {
-      setMessage("You must be logged in!");
-      return;
+    try {
+      const res = await fetch("/api/cards/add", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ cardId }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        setMessage(data.error || "You must be logged in!");
+      } else {
+        setMessage("Card added to your collection!");
+      }
+    } catch {
+      setMessage("Something went wrong.");
     }
-
-    const res = await fetch("/api/cards/add", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: "Bearer " + token,
-      },
-      body: JSON.stringify({ cardId }),
-    });
-
-    const data = await res.json();
-    if (!res.ok) setMessage(data.error || "Failed to add card");
-    else setMessage("Card added to your collection!");
   }
 
-  // --- FILTERED CARDS ---
+  // Filtering logic
   const filteredCards = cards.filter((card) => {
     const term = search.toLowerCase();
 
@@ -76,10 +82,12 @@ export default function AddCardPage() {
       </h1>
 
       {message && (
-        <p className="text-center font-bold text-pink-dark mb-4">{message}</p>
+        <p className="text-center font-bold text-pink-dark mb-4">
+          {message}
+        </p>
       )}
 
-      {/* --- SEARCH + FILTERS --- */}
+      {/* Search + Filter */}
       <div className="flex justify-center gap-3 mb-6">
         <input
           type="text"
@@ -101,7 +109,7 @@ export default function AddCardPage() {
         </select>
       </div>
 
-      {/* --- CARDS --- */}
+      {/* Cards Grid */}
       <div className="flex flex-wrap gap-y-6 gap-x-3">
         {filteredCards.map((card) => (
           <div

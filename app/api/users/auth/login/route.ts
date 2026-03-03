@@ -23,18 +23,24 @@ export async function POST(req: Request) {
       );
     }
 
-    // ⭐ CREATE JWT TOKEN
     const token = jwt.sign(
       { id: user.id, email: user.email },
       process.env.JWT_SECRET!,
       { expiresIn: "7d" }
     );
 
-    return NextResponse.json({
-      success: true,
-      token,
-      userId: user.id,
+    const response = NextResponse.json({ success: true });
+
+    // ✅ Store token in HTTP-only cookie
+    response.cookies.set("token", token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
+      path: "/",
+      maxAge: 60 * 60 * 24 * 7,
     });
+
+    return response;
   } catch (err) {
     console.error(err);
     return NextResponse.json({ error: "Server error" }, { status: 500 });

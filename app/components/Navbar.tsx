@@ -3,27 +3,39 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { Menu, X } from "lucide-react";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 
-export default function Navbar() {
+interface NavbarProps {
+  user: {
+    id: number;
+    email: string;
+  } | null;
+}
+
+export default function Navbar({ user }: NavbarProps) {
   const [open, setOpen] = useState(false);
   const [shrink, setShrink] = useState(false);
-  const [user, setUser] = useState<any>(null);
   const [collectionCount, setCollectionCount] = useState<number>(0);
   const [wishlistCount, setWishlistCount] = useState<number>(0);
 
   const router = useRouter();
+  const pathname = usePathname();
 
-  // Logout
-  const handleLogout = () => {
-    localStorage.removeItem("token");
-    setUser(null);
+  // ✅ Logout
+  const handleLogout = async () => {
+    await fetch("/api/users/auth/logout", {
+      method: "POST",
+      credentials: "include",
+    });
+
     setCollectionCount(0);
     setWishlistCount(0);
+
+    router.refresh();
     router.push("/");
   };
 
-  // Detect scroll for shrinking navbar
+  // ✅ Scroll shrink animation
   useEffect(() => {
     const handleScroll = () => {
       setShrink(window.scrollY > 20);
@@ -33,38 +45,38 @@ export default function Navbar() {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
-  // Fetch user + counts
+  // ✅ Reload counts on route change
   useEffect(() => {
-    const token = localStorage.getItem("token");
-    if (!token) return;
+    if (!user) {
+      setCollectionCount(0);
+      setWishlistCount(0);
+      return;
+    }
 
-    async function loadData() {
-      // User + collection
-      const userRes = await fetch("/api/users/me", {
-        headers: { Authorization: "Bearer " + token },
-      });
+    async function loadCounts() {
+      try {
+        const res = await fetch("/api/me", {
+          credentials: "include",
+          cache: "no-store",
+        });
 
-      if (userRes.ok) {
-        const userData = await userRes.json();
-        setUser(userData.user);
-        setCollectionCount(userData.user.cards?.length || 0);
-      }
-
-      // Wishlist count
-      const wishlistRes = await fetch("/api/wishlist", {
-        headers: { Authorization: "Bearer " + token },
-      });
-
-      if (wishlistRes.ok) {
-        const wishlistData = await wishlistRes.json();
-        if (Array.isArray(wishlistData)) {
-          setWishlistCount(wishlistData.length);
+        if (!res.ok) {
+          setCollectionCount(0);
+          setWishlistCount(0);
+          return;
         }
+
+        const data = await res.json();
+
+        setCollectionCount(data?.cards?.length || 0);
+        setWishlistCount(data?.wishlist?.length || 0);
+      } catch (err) {
+        console.error("Failed loading navbar counts:", err);
       }
     }
 
-    loadData();
-  }, []);
+    loadCounts();
+  }, [user, pathname]);
 
   return (
     <nav
@@ -97,6 +109,8 @@ export default function Navbar() {
         <div className="hidden md:flex gap-8 text-lg font-semibold items-center">
           <NavLink href="/add-card">Add Card</NavLink>
 
+          {user && <NavLink href="/friends">Friends</NavLink>}
+
           {user ? (
             <>
               <NavLink href="/profile">
@@ -115,14 +129,19 @@ export default function Navbar() {
 
               <button
                 onClick={handleLogout}
-                className="bg-white/20 px-4 py-2 rounded-xl-bubble hover:bg-white/30 transition shadow-md"
+                className="bg-white/20 px-4 py-2 rounded-xl hover:bg-white/30 transition shadow-md"
               >
                 Logout
               </button>
 
-              <div className="ml-4 w-10 h-10 rounded-full bg-white border-2 border-pink-200 shadow-md flex items-center justify-center text-pink-600 font-bold">
-                {user.name?.charAt(0).toUpperCase()}
-              </div>
+              <Link
+                href="/profile/settings"
+                className="ml-4 w-10 h-10 rounded-full bg-white border-2 border-pink-200 shadow-md 
+                           flex items-center justify-center text-pink-600 font-bold
+                           hover:scale-110 transition cursor-pointer"
+              >
+                {user.email.charAt(0).toUpperCase()}
+              </Link>
             </>
           ) : (
             <>
@@ -138,6 +157,8 @@ export default function Navbar() {
         <div className="mt-4 flex flex-col gap-4 md:hidden pb-4 text-lg font-semibold">
           <NavLink href="/add-card">Add Card</NavLink>
 
+          {user && <NavLink href="/friends">Friends</NavLink>}
+
           {user ? (
             <>
               <NavLink href="/profile">
@@ -150,7 +171,7 @@ export default function Navbar() {
 
               <button
                 onClick={handleLogout}
-                className="text-left bg-white/20 px-4 py-2 rounded-xl-bubble hover:bg-white/30 transition shadow-md"
+                className="text-left bg-white/20 px-4 py-2 rounded-xl hover:bg-white/30 transition shadow-md"
               >
                 Logout
               </button>

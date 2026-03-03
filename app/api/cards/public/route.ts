@@ -1,14 +1,8 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-
 export async function GET() {
   try {
     const cards = await prisma.card.findMany({
-      where: {
-        image: {
-          not: null,
-        },
-      },
       select: {
         image: true,
       },
@@ -17,7 +11,7 @@ export async function GET() {
 
     return NextResponse.json({ cards });
   } catch (error) {
-    console.error("Error fetching public cards:", error);
+    console.log(error);
     return NextResponse.json({ cards: [] });
   }
 }

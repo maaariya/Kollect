@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
-import Navbar from "@/app/components/Navbar";
+import NavbarWrapper from "@/app/components/navbarWrapper";
+export const dynamic = "force-dynamic";
 export const metadata: Metadata = {
   title: "Kollect",
   description: "A cute K-Pop photocard trading app",
@@ -13,7 +14,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-       <head>
+      <head>
         {/* ⭐ Google Font: Righteous */}
         <link
           href="https://fonts.googleapis.com/css2?family=Righteous&display=swap"
@@ -22,7 +23,9 @@ export default function RootLayout({
       </head>
 
       <body className="antialiased font-righteous">
-         <Navbar />
+        {/* ✅ Server-side navbar that reads cookies */}
+        <NavbarWrapper />
+
         {/* Floating hearts */}
         <div className="heart"></div>
         <div className="heart"></div>
@@ -34,4 +37,3 @@ export default function RootLayout({
     </html>
   );
 }
-
