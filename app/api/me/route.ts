@@ -12,23 +12,21 @@ export async function GET() {
       return NextResponse.json(null, { status: 401 });
     }
 
-    const decoded = jwt.verify(token, process.env.JWT_SECRET!) as {
-      id: number;
-    };
+    const decoded = jwt.verify(
+      token,
+      process.env.JWT_SECRET!
+    ) as { id: number };
 
     const user = await prisma.user.findUnique({
       where: { id: decoded.id },
       include: {
         cards: {
-          include: {
-            card: true, // ✅ include actual card data
-          },
+          include: { card: true },
         },
         wishlist: {
-          include: {
-            card: true, // ✅ include actual card data
-          },
+          include: { card: true },
         },
+        tradingListings: true,
       },
     });
 
@@ -36,18 +34,22 @@ export async function GET() {
       return NextResponse.json(null, { status: 404 });
     }
 
-    // ✅ flatten cards + wishlist so frontend receives clean Card[]
-    const formattedUser = {
+    const tradingCardIds = user.tradingListings.map(
+      (t) => t.cardId
+    );
+
+    return NextResponse.json({
       id: user.id,
       name: user.name,
       email: user.email,
       phone: user.phone,
       bio: user.bio,
-      cards: user.cards.map((c) => c.card),
+      cards: user.cards.map((uc) => ({
+        ...uc.card,
+        isTrading: tradingCardIds.includes(uc.card.id),
+      })),
       wishlist: user.wishlist.map((w) => w.card),
-    };
-
-    return NextResponse.json(formattedUser);
+    });
   } catch (error) {
     console.error("ME ROUTE ERROR:", error);
     return NextResponse.json(null, { status: 401 });

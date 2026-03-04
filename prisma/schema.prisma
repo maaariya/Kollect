@@ -21,6 +21,7 @@ model User {
   sentMessages           Message[]      @relation("sentMessages")
   cards                  UserCard[]
   wishlist               WishlistCard[]
+  tradingListings TradingListing[]
 }
 
 model Card {
@@ -33,6 +34,7 @@ model Card {
   createdAt    DateTime       @default(now())
   users        UserCard[]
   wishlistedBy WishlistCard[]
+  tradingListings TradingListing[]
 }
 
 model UserCard {
@@ -75,4 +77,16 @@ model Message {
   createdAt  DateTime? @default(now()) @db.Timestamp(6)
   receiver   User      @relation("receivedMessages", fields: [receiverId], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_receiver")
   sender     User      @relation("sentMessages", fields: [senderId], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_sender")
+}
+
+model TradingListing {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  cardId    Int
+  createdAt DateTime @default(now())
+
+  user      User     @relation(fields: [userId], references: [id])
+  card      Card     @relation(fields: [cardId], references: [id])
+
+  @@unique([userId, cardId])
 }

@@ -10,6 +10,7 @@ type Card = {
   group: string;
   album: string;
   image: string | null;
+  isTrading?: boolean;
 };
 
 const CARDS_PER_PAGE = 9;
@@ -78,6 +79,33 @@ setWishlist(Array.isArray(user.wishlist) ? user.wishlist : []);
     });
   }
 
+
+  async function toggleTrading(cardId: number, isTrading?: boolean) {
+  const endpoint = isTrading
+    ? "/api/trading/remove"
+    : "/api/trading/add";
+
+  const res = await fetch(endpoint, {
+    method: "POST",
+    credentials: "include",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ cardId }),
+  });
+
+  if (!res.ok) return;
+
+  // Update UI instantly
+  setCards((prev) =>
+    prev.map((card) =>
+      card.id === cardId
+        ? { ...card, isTrading: !isTrading }
+        : card
+    )
+  );
+}
+  
   async function removeFromWishlist(cardId: number) {
     const res = await fetch("/api/wishlist/remove", {
       method: "POST",
@@ -182,19 +210,30 @@ setWishlist(Array.isArray(user.wishlist) ? user.wishlist : []);
                   </p>
 
                   <div
-                    className="absolute inset-0 bg-black/50 rounded-2xl opacity-0 
-                    group-hover:opacity-100 flex items-center justify-center transition"
-                  >
-                    <button
-                      onClick={() => removeFromCollection(card.id)}
-                      className="bg-red-500 text-white px-4 py-2 rounded-xl text-sm"
-                    >
-                      Remove
-                    </button>
-                  </div>
+  className="absolute inset-0 bg-black/50 rounded-2xl opacity-0 
+  group-hover:opacity-100 flex flex-col items-center justify-center gap-3 transition"
+>
+  <button
+    onClick={() => removeFromCollection(card.id)}
+    className="bg-red-500 text-white px-4 py-2 rounded-xl text-sm"
+  >
+    Remove
+  </button>
+
+  <button
+    onClick={() => toggleTrading(card.id, card.isTrading)}
+    className={`px-4 py-2 rounded-xl text-sm text-white ${
+      card.isTrading ? "bg-yellow-500" : "bg-green-500"
+    }`}
+  >
+    {card.isTrading ? "Remove from Trading" : "Add to Trading"}
+  </button>
+</div>
                 </div>
               ))}
             </div>
+
+            
 
             {collectionTotalPages > 1 && (
               <div className="flex justify-center items-center gap-6 mt-8">
