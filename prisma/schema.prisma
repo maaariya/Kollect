@@ -22,6 +22,8 @@ model User {
   cards                  UserCard[]
   wishlist               WishlistCard[]
   tradingListings TradingListing[]
+  tradesSent     Trade[] @relation("tradeSender")
+  tradesReceived Trade[] @relation("tradeReceiver")
 }
 
 model Card {
@@ -32,9 +34,13 @@ model Card {
   album        String
   image        String?
   createdAt    DateTime       @default(now())
+
   users        UserCard[]
   wishlistedBy WishlistCard[]
   tradingListings TradingListing[]
+
+  offeredInTrades   Trade[] @relation("offeredCard")
+  requestedInTrades Trade[] @relation("requestedCard")
 }
 
 model UserCard {
@@ -89,4 +95,21 @@ model TradingListing {
   card      Card     @relation(fields: [cardId], references: [id])
 
   @@unique([userId, cardId])
+}
+
+model Trade {
+  id            Int      @id @default(autoincrement())
+  senderId      Int
+  receiverId    Int
+  offeredCardId Int
+  requestedCardId Int
+  status        String   @default("pending")
+  paymentStatus String   @default("pending")
+  createdAt     DateTime @default(now())
+
+  sender   User @relation("tradeSender", fields: [senderId], references: [id])
+  receiver User @relation("tradeReceiver", fields: [receiverId], references: [id])
+
+  offeredCard   Card @relation("offeredCard", fields: [offeredCardId], references: [id])
+  requestedCard Card @relation("requestedCard", fields: [requestedCardId], references: [id])
 }

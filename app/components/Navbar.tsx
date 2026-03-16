@@ -21,7 +21,7 @@ export default function Navbar({ user }: NavbarProps) {
   const router = useRouter();
   const pathname = usePathname();
 
-  // ✅ Logout
+  // Logout
   const handleLogout = async () => {
     await fetch("/api/users/auth/logout", {
       method: "POST",
@@ -35,7 +35,7 @@ export default function Navbar({ user }: NavbarProps) {
     router.push("/");
   };
 
-  // ✅ Scroll shrink animation
+  // Scroll shrink animation
   useEffect(() => {
     const handleScroll = () => {
       setShrink(window.scrollY > 20);
@@ -45,7 +45,7 @@ export default function Navbar({ user }: NavbarProps) {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
-  // ✅ Reload counts on route change
+  // Reload counts on route change
   useEffect(() => {
     if (!user) {
       setCollectionCount(0);
@@ -111,6 +111,8 @@ export default function Navbar({ user }: NavbarProps) {
 
           {user && <NavLink href="/friends">Friends</NavLink>}
 
+          {user && <NavLink href="/trading">Trading</NavLink>}
+
           {user ? (
             <>
               <NavLink href="/profile">
@@ -158,6 +160,8 @@ export default function Navbar({ user }: NavbarProps) {
           <NavLink href="/add-card">Add Card</NavLink>
 
           {user && <NavLink href="/friends">Friends</NavLink>}
+
+          {user && <NavLink href="/trading">Trading</NavLink>}
 
           {user ? (
             <>
