@@ -73,7 +73,7 @@ export async function POST(
           data: {
             senderId:   decoded.id,
             receiverId: otherId,
-            content:    "✅ Trade accepted! Both users must now pay the £5 deposit.",
+            content:    "Trade accepted! Both users must now pay the £5 deposit.",
             tradeId:    trade.id,
           },
         });
@@ -101,7 +101,7 @@ export async function POST(
           data: {
             senderId:   decoded.id,
             receiverId: otherId,
-            content:    "❌ Trade declined.",
+            content:    "Trade declined.",
             tradeId:    trade.id,
           },
         });
@@ -142,7 +142,7 @@ export async function POST(
             data: {
               senderId:   decoded.id,
               receiverId: otherId,
-              content:    "💳 Both deposits received! Please post your cards now.",
+              content:    "Both deposits received! Please post your cards now.",
               tradeId:    trade.id,
             },
           });
@@ -185,7 +185,7 @@ export async function POST(
             data: {
               senderId:   decoded.id,
               receiverId: otherId,
-              content:    "📬 Both cards are on their way! Confirm when yours arrives.",
+              content:    "Both cards are on their way! Confirm when yours arrives.",
               tradeId:    trade.id,
             },
           });
@@ -229,7 +229,7 @@ export async function POST(
             data: {
               senderId:   decoded.id,
               receiverId: otherId,
-              content:    "🎉 Trade complete! Both deposits have been returned. Enjoy your new cards!",
+              content:    "Trade complete! Both deposits have been returned. Enjoy your new cards!",
               tradeId:    trade.id,
             },
           });
