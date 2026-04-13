@@ -5,7 +5,7 @@ import { NextResponse } from "next/server";
 
 export async function GET(
   req: Request,
-  { params }: { params: { userId: string } }
+  { params }: { params: Promise<{ userId: string }> }
 ) {
   try {
     const cookieStore = await cookies();
@@ -20,19 +20,14 @@ export async function GET(
       process.env.JWT_SECRET!
     ) as { id: number };
 
-    const userId = Number(params.userId);
+    const { userId } = await params;
+    const otherUserId = Number(userId);
 
     const messages = await prisma.message.findMany({
       where: {
         OR: [
-          {
-            senderId: decoded.id,
-            receiverId: userId,
-          },
-          {
-            senderId: userId,
-            receiverId: decoded.id,
-          },
+          { senderId: decoded.id,  receiverId: otherUserId },
+          { senderId: otherUserId, receiverId: decoded.id  },
         ],
       },
       orderBy: {

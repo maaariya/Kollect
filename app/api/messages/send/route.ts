@@ -1,3 +1,5 @@
+// app/api/messages/send/route.ts
+
 import { prisma } from "@/lib/prisma";
 import { cookies } from "next/headers";
 import jwt from "jsonwebtoken";
@@ -9,27 +11,33 @@ export async function POST(req: Request) {
     const token = cookieStore.get("token")?.value;
 
     if (!token) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return NextResponse.json({ error: "Unauthorised" }, { status: 401 });
     }
 
-    const decoded = jwt.verify(
-      token,
-      process.env.JWT_SECRET!
-    ) as { id: number };
+    const decoded = jwt.verify(token, process.env.JWT_SECRET!) as {
+      id: number;
+    };
 
     const { receiverId, content } = await req.json();
+
+    if (!receiverId || !content?.trim()) {
+      return NextResponse.json({ error: "Missing fields" }, { status: 400 });
+    }
 
     const message = await prisma.message.create({
       data: {
         senderId: decoded.id,
-        receiverId,
-        content,
+        receiverId: Number(receiverId),
+        content: content.trim(),
       },
     });
 
-    return NextResponse.json(message);
+    return NextResponse.json(message, { status: 201 });
   } catch (err) {
-    console.error(err);
-    return NextResponse.json({ error: "Server error" }, { status: 500 });
+    console.error("[messages/send]", err);
+    return NextResponse.json(
+      { error: "Internal server error" },
+      { status: 500 }
+    );
   }
 }

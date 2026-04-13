@@ -1,7 +1,10 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import NavbarWrapper from "@/app/components/navbarWrapper";
+import PayPalProvider from "@/app/providers/PayPalProvider";
+
 export const dynamic = "force-dynamic";
+
 export const metadata: Metadata = {
   title: "Kollect",
   description: "A cute K-Pop photocard trading app",
@@ -15,7 +18,6 @@ export default function RootLayout({
   return (
     <html lang="en">
       <head>
-        {/* ⭐ Google Font: Righteous */}
         <link
           href="https://fonts.googleapis.com/css2?family=Righteous&display=swap"
           rel="stylesheet"
@@ -23,16 +25,16 @@ export default function RootLayout({
       </head>
 
       <body className="antialiased font-righteous">
-        {/* ✅ Server-side navbar that reads cookies */}
-        <NavbarWrapper />
+        <PayPalProvider>
+          <NavbarWrapper />
 
-        {/* Floating hearts */}
-        <div className="heart"></div>
-        <div className="heart"></div>
-        <div className="heart"></div>
-        <div className="heart"></div>
+          <div className="heart"></div>
+          <div className="heart"></div>
+          <div className="heart"></div>
+          <div className="heart"></div>
 
-        {children}
+          {children}
+        </PayPalProvider>
       </body>
     </html>
   );

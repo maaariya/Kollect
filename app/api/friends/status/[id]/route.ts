@@ -3,16 +3,23 @@ import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import jwt from "jsonwebtoken";
 
-export async function GET(req: Request, { params }: { params: { id: string } }) {
+export async function GET(
+  req: Request,
+  { params }: { params: Promise<{ id: string }> }
+) {
   try {
-    const profileId = Number(params.id);
+    const { id } = await params;
+    const profileId = Number(id);
     const token = (await cookies()).get("token")?.value;
     if (!token) return NextResponse.json({ status: "none" });
 
-    const decoded = jwt.verify(token, process.env.JWT_SECRET!) as { id: number };
+    const decoded = jwt.verify(token, process.env.JWT_SECRET!) as {
+      id: number;
+    };
     const currentUserId = decoded.id;
 
-    if (currentUserId === profileId) return NextResponse.json({ status: "friends" });
+    if (currentUserId === profileId)
+      return NextResponse.json({ status: "friends" });
 
     const friendship = await prisma.friendship.findFirst({
       where: {
@@ -26,7 +33,7 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
     let status: "none" | "pending" | "friends" = "none";
     if (friendship) {
       status = "friends";
-      if (friendship.requesterId === currentUserId) status = "pending"; // request sent
+      if (friendship.requesterId === currentUserId) status = "pending";
     }
 
     return NextResponse.json({ status });

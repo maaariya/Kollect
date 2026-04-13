@@ -17,6 +17,7 @@ export default function Navbar({ user }: NavbarProps) {
   const [shrink, setShrink] = useState(false);
   const [collectionCount, setCollectionCount] = useState<number>(0);
   const [wishlistCount, setWishlistCount] = useState<number>(0);
+  const [unreadCount, setUnreadCount] = useState<number>(0);
 
   const router = useRouter();
   const pathname = usePathname();
@@ -30,6 +31,7 @@ export default function Navbar({ user }: NavbarProps) {
 
     setCollectionCount(0);
     setWishlistCount(0);
+    setUnreadCount(0);
 
     router.refresh();
     router.push("/");
@@ -45,37 +47,43 @@ export default function Navbar({ user }: NavbarProps) {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
-  // Reload counts on route change
+  // Load counts
   useEffect(() => {
     if (!user) {
       setCollectionCount(0);
       setWishlistCount(0);
+      setUnreadCount(0);
       return;
     }
 
-    async function loadCounts() {
+    async function loadData() {
       try {
-        const res = await fetch("/api/me", {
+        const meRes = await fetch("/api/me", {
           credentials: "include",
           cache: "no-store",
         });
 
-        if (!res.ok) {
-          setCollectionCount(0);
-          setWishlistCount(0);
-          return;
+        if (meRes.ok) {
+          const data = await meRes.json();
+          setCollectionCount(data?.cards?.length || 0);
+          setWishlistCount(data?.wishlist?.length || 0);
         }
 
-        const data = await res.json();
+        const msgRes = await fetch("/api/messages/unread-count", {
+          credentials: "include",
+          cache: "no-store",
+        });
 
-        setCollectionCount(data?.cards?.length || 0);
-        setWishlistCount(data?.wishlist?.length || 0);
+        if (msgRes.ok) {
+          const data = await msgRes.json();
+          setUnreadCount(data.count || 0);
+        }
       } catch (err) {
-        console.error("Failed loading navbar counts:", err);
+        console.error("Navbar load error:", err);
       }
     }
 
-    loadCounts();
+    loadData();
   }, [user, pathname]);
 
   return (
@@ -89,27 +97,30 @@ export default function Navbar({ user }: NavbarProps) {
       `}
     >
       <div className="flex justify-between items-center relative">
-        {/* Logo */}
-        <Link
-          href="/"
-          className="text-3xl font-extrabold drop-shadow-xl tracking-wide"
-        >
+        <Link href="/" className="text-3xl font-extrabold">
           Kollect
         </Link>
 
-        {/* Mobile Button */}
-        <button
-          onClick={() => setOpen(!open)}
-          className="md:hidden hover:scale-110 transition"
-        >
+        <button onClick={() => setOpen(!open)} className="md:hidden">
           {open ? <X size={28} /> : <Menu size={28} />}
         </button>
 
-        {/* Desktop Menu */}
+        {/* Desktop */}
         <div className="hidden md:flex gap-8 text-lg font-semibold items-center">
           <NavLink href="/add-card">Add Card</NavLink>
 
           {user && <NavLink href="/friends">Friends</NavLink>}
+
+          {user && (
+            <NavLink href="/messages">
+              Messages
+              {unreadCount > 0 && (
+                <span className="ml-1 px-2 py-0.5 bg-red-500 rounded-full text-xs">
+                  {unreadCount}
+                </span>
+              )}
+            </NavLink>
+          )}
 
           {user && <NavLink href="/trading">Trading</NavLink>}
 
@@ -123,25 +134,17 @@ export default function Navbar({ user }: NavbarProps) {
               </NavLink>
 
               <NavLink href="/wishlist">
-                My Wishlist
+                Wishlist
                 <span className="ml-1 px-2 py-0.5 bg-white/30 rounded-full text-sm">
                   {wishlistCount}
                 </span>
               </NavLink>
 
-              <button
-                onClick={handleLogout}
-                className="bg-white/20 px-4 py-2 rounded-xl hover:bg-white/30 transition shadow-md"
-              >
+              <button onClick={handleLogout} className="bg-white/20 px-4 py-2 rounded-xl">
                 Logout
               </button>
 
-              <Link
-                href="/profile/settings"
-                className="ml-4 w-10 h-10 rounded-full bg-white border-2 border-pink-200 shadow-md 
-                           flex items-center justify-center text-pink-600 font-bold
-                           hover:scale-110 transition cursor-pointer"
-              >
+              <Link href="/profile/settings" className="ml-4 w-10 h-10 rounded-full bg-white flex items-center justify-center text-pink-600 font-bold">
                 {user.email.charAt(0).toUpperCase()}
               </Link>
             </>
@@ -154,31 +157,25 @@ export default function Navbar({ user }: NavbarProps) {
         </div>
       </div>
 
-      {/* Mobile Menu */}
+      {/* Mobile */}
       {open && (
         <div className="mt-4 flex flex-col gap-4 md:hidden pb-4 text-lg font-semibold">
           <NavLink href="/add-card">Add Card</NavLink>
-
           {user && <NavLink href="/friends">Friends</NavLink>}
+
+          {user && (
+            <NavLink href="/messages">
+              Messages ({unreadCount})
+            </NavLink>
+          )}
 
           {user && <NavLink href="/trading">Trading</NavLink>}
 
           {user ? (
             <>
-              <NavLink href="/profile">
-                My Collection ({collectionCount})
-              </NavLink>
-
-              <NavLink href="/wishlist">
-                My Wishlist ({wishlistCount})
-              </NavLink>
-
-              <button
-                onClick={handleLogout}
-                className="text-left bg-white/20 px-4 py-2 rounded-xl hover:bg-white/30 transition shadow-md"
-              >
-                Logout
-              </button>
+              <NavLink href="/profile">Collection ({collectionCount})</NavLink>
+              <NavLink href="/wishlist">Wishlist ({wishlistCount})</NavLink>
+              <button onClick={handleLogout}>Logout</button>
             </>
           ) : (
             <>
@@ -192,23 +189,9 @@ export default function Navbar({ user }: NavbarProps) {
   );
 }
 
-function NavLink({
-  href,
-  children,
-}: {
-  href: string;
-  children: React.ReactNode;
-}) {
+function NavLink({ href, children }: any) {
   return (
-    <Link
-      href={href}
-      className="
-        hover:text-yellow-200 
-        hover:scale-110 
-        transition-all 
-        drop-shadow-md
-      "
-    >
+    <Link href={href} className="hover:text-yellow-200 transition">
       {children}
     </Link>
   );
