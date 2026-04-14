@@ -3,6 +3,7 @@
 import { useEffect, useState, useRef } from "react";
 import { useParams, useSearchParams } from "next/navigation";
 import Link from "next/link";
+import { PayPalButtons } from "@paypal/react-paypal-js";
 
 /* ───────────────────────── TYPES ───────────────────────── */
 
@@ -110,6 +111,30 @@ function TradePanel({
     );
   }
 
+  async function createOrder() {
+    const res = await fetch("/api/paypal/create-order", {
+      method: "POST",
+    });
+
+    const data = await res.json();
+    return data.id;
+  }
+
+  async function onApprove(data: any) {
+    await fetch("/api/paypal/capture-order", {
+  method: "POST",
+  credentials: "include",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify({
+    orderId: data.orderID,
+    tradeId: trade.id,
+    userId: myId,
+  }),
+});
+
+    onAction(trade.id, "refresh");
+  }
+
   return (
     <div className="border rounded-2xl bg-white shadow-sm mb-4 overflow-hidden">
 
@@ -150,30 +175,61 @@ function TradePanel({
           {/* ACTIONS */}
           <div className="flex flex-wrap gap-2">
 
-            {trade.status === "PENDING" && (
-              <button
-                onClick={() => onAction(trade.id, "accept")}
-                className="px-4 py-2 bg-pink-500 text-white rounded-xl text-sm"
-              >
-                Accept
-              </button>
-            )}
+            {/* ───────── PAYPAL DEPOSIT ───────── */}
+{/* ───────── PAYPAL DEPOSIT ───────── */}
+{trade.status === "ACCEPTED" && !myDepositPaid && (
+  <div className="w-full">
+    <PayPalButtons
+      style={{ layout: "vertical" }}
 
-            {trade.status === "PENDING" && (
-              <button
-                onClick={() => onAction(trade.id, "decline")}
-                className="px-4 py-2 bg-red-500 text-white rounded-xl text-sm"
-              >
-                Decline
-              </button>
-            )}
+      createOrder={async () => {
+        const res = await fetch("/api/paypal/create-order", {
+          method: "POST",
+          credentials: "include",
+        });
 
-            {trade.status === "ACCEPTED" && !myDepositPaid && (
-              <p className="text-sm text-gray-500">
-                Waiting for deposit step...
-              </p>
-            )}
+        const data = await res.json();
+        console.log("create-order response:", data);
 
+        if (!res.ok) {
+          throw new Error(data?.error || "Failed to create PayPal order");
+        }
+
+        if (!data?.id) {
+          throw new Error("Missing PayPal order ID from backend");
+        }
+
+        return data.id;
+      }}
+
+      onApprove={async (data) => {
+        console.log("PayPal approved:", data);
+
+        const res = await fetch("/api/paypal/capture-order", {
+          method: "POST",
+          credentials: "include",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            orderId: data.orderID,
+            tradeId: trade.id,
+            userId: myId,
+          }),
+        });
+
+        const result = await res.json();
+        console.log("capture response:", result);
+
+        onAction(trade.id, "refresh");
+      }}
+
+      onError={(err) => {
+        console.error("PayPal error:", err);
+      }}
+    />
+  </div>
+)}
+
+            {/* SENT CARD */}
             {trade.status === "DEPOSIT_PAID" && !myCardSent && (
               <button
                 onClick={() => onAction(trade.id, "mark_sent")}
@@ -183,6 +239,7 @@ function TradePanel({
               </button>
             )}
 
+            {/* CONFIRM */}
             {trade.status === "CARDS_SENT" && !myConfirmed && (
               <button
                 onClick={() => onAction(trade.id, "confirm_received")}
@@ -197,13 +254,13 @@ function TradePanel({
                 🎉 Trade complete
               </p>
             )}
+
           </div>
         </div>
       )}
     </div>
   );
 }
-
 /* ───────────────────────── PAGE ───────────────────────── */
 
 export default function MessagesPage() {

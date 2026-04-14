@@ -1,32 +1,75 @@
 import { NextResponse } from "next/server";
-import { getPayPalAccessToken } from "@/lib/paypal";
 
 export async function POST() {
-  const accessToken = await getPayPalAccessToken();
-
-  const res = await fetch(
-    `${process.env.PAYPAL_BASE}/v2/checkout/orders`,
-    {
+  try {
+    // 1. Get PayPal access token
+    const auth = await fetch("https://api-m.sandbox.paypal.com/v1/oauth2/token", {
       method: "POST",
       headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${accessToken}`,
+        Authorization:
+          "Basic " +
+          Buffer.from(
+            process.env.PAYPAL_CLIENT_ID + ":" + process.env.PAYPAL_SECRET
+          ).toString("base64"),
+        "Content-Type": "application/x-www-form-urlencoded",
       },
-      body: JSON.stringify({
-        intent: "CAPTURE",
-        purchase_units: [
-          {
-            amount: {
-              currency_code: "GBP",
-              value: "5.00",
-            },
-          },
-        ],
-      }),
+      body: "grant_type=client_credentials",
+    });
+
+    const authData = await auth.json();
+
+    if (!auth.ok) {
+      console.error("PayPal auth error:", authData);
+      return NextResponse.json(
+        { error: "Failed to get PayPal token" },
+        { status: 500 }
+      );
     }
-  );
 
-  const data = await res.json();
+    // 2. Create order
+    const order = await fetch(
+      "https://api-m.sandbox.paypal.com/v2/checkout/orders",
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${authData.access_token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          intent: "CAPTURE",
+          purchase_units: [
+            {
+              amount: {
+                currency_code: "USD",
+                value: "5.00",
+              },
+            },
+          ],
+        }),
+      }
+    );
 
-  return NextResponse.json({ id: data.id });
+    const orderData = await order.json();
+
+    if (!order.ok) {
+      console.error("PayPal order error:", orderData);
+      return NextResponse.json(
+        { error: "Failed to create PayPal order" },
+        { status: 500 }
+      );
+    }
+
+    return NextResponse.json(orderData);
+
+  } catch (err) {
+    console.error("PayPal server error:", err);
+    return NextResponse.json(
+      { error: "Server error creating PayPal order" },
+      { status: 500 }
+    );
+  }
 }
+console.log("ENV CHECK:", {
+  id: process.env.PAYPAL_CLIENT_ID,
+  secret: process.env.PAYPAL_SECRET,
+});
