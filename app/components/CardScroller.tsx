@@ -5,7 +5,7 @@ export default function CardScroller({
   variant,
 }: {
   items: any[];
-  variant: "collection" | "wishlist";
+  variant: "wishlist" | "collection" | "trading";
 }) {
   return (
     <div className="relative">

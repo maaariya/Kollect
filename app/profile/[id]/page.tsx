@@ -13,12 +13,13 @@ export default async function PublicProfile({
 }) {
   const profileId = Number(params.id);
 
-  // Fetch the user with cards, wishlist, and friendship info
+  // ✅ Fetch user INCLUDING trading listings
   const user = await prisma.user.findUnique({
     where: { id: profileId },
     include: {
       cards: { include: { card: true } },
       wishlist: { include: { card: true } },
+      tradingListings: { include: { card: true } }, // ✅ added
       receivedFriendRequests: true,
       sentFriendRequests: true,
     },
@@ -26,7 +27,7 @@ export default async function PublicProfile({
 
   if (!user) return <div className="p-10">User not found</div>;
 
-  // Get current logged-in user from cookies
+  // Get current logged-in user
   const token = (await cookies()).get("token")?.value;
   let currentUserId: number | null = null;
 
@@ -39,7 +40,7 @@ export default async function PublicProfile({
     } catch {}
   }
 
-  // Calculate friend count
+  // Friend count
   const friendCount =
     user.receivedFriendRequests.length +
     user.sentFriendRequests.length;
@@ -52,7 +53,6 @@ export default async function PublicProfile({
 
       {/* Profile Card */}
       <div className="max-w-5xl mx-auto px-6 -mt-20">
-
         <div className="bg-pink-200 rounded-3xl shadow-xl p-8 relative">
 
           {/* Avatar */}
@@ -73,9 +73,13 @@ export default async function PublicProfile({
           </div>
 
           <div className="ml-40">
-            <h1 className="text-3xl font-bold text-gray-800">{user.name}</h1>
+            <h1 className="text-3xl font-bold text-gray-800">
+              {user.name}
+            </h1>
 
-            {user.bio && <p className="text-gray-600 mt-2">{user.bio}</p>}
+            {user.bio && (
+              <p className="text-gray-600 mt-2">{user.bio}</p>
+            )}
 
             {/* Stats */}
             <div className="flex gap-8 mt-6 text-center">
@@ -93,13 +97,23 @@ export default async function PublicProfile({
                 <p className="text-sm text-gray-500">Wishlist</p>
               </div>
 
+              {/* ✅ NEW: Trading count */}
               <div>
-                <p className="text-2xl font-bold text-pink-600">{friendCount}</p>
+                <p className="text-2xl font-bold text-pink-600">
+                  {user.tradingListings.length}
+                </p>
+                <p className="text-sm text-gray-500">Trading</p>
+              </div>
+
+              <div>
+                <p className="text-2xl font-bold text-pink-600">
+                  {friendCount}
+                </p>
                 <p className="text-sm text-gray-500">Friends</p>
               </div>
             </div>
 
-            {/* Action Buttons */}
+            {/* Actions */}
             {currentUserId && currentUserId !== user.id && (
               <div className="mt-6 flex gap-4">
                 <AddFriendButton
@@ -118,7 +132,7 @@ export default async function PublicProfile({
           </div>
         </div>
 
-        {/* Collection Section */}
+        {/* ================= COLLECTION ================= */}
         <div className="mt-16">
           <h2 className="text-2xl font-bold mb-6 text-gray-800">
             Collection ({user.cards.length})
@@ -131,8 +145,26 @@ export default async function PublicProfile({
           )}
         </div>
 
-        {/* Wishlist Section */}
+        {/* ================= TRADING ================= */}
         <div className="mt-16">
+          <h2 className="text-2xl font-bold mb-6 text-gray-800">
+            Trading ({user.tradingListings.length})
+          </h2>
+
+          {user.tradingListings.length === 0 ? (
+            <p className="text-gray-500">
+              No cards listed for trading.
+            </p>
+          ) : (
+            <CardScroller
+              items={user.tradingListings}
+              variant="trading"
+            />
+          )}
+        </div>
+
+        {/* ================= WISHLIST ================= */}
+        <div className="mt-16 mb-20">
           <h2 className="text-2xl font-bold mb-6 text-gray-800">
             Wishlist ({user.wishlist.length})
           </h2>
