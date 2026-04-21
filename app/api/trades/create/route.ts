@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { cookies } from "next/headers";
 import jwt from "jsonwebtoken";
 import { NextResponse } from "next/server";
+import { TradeStatus } from "@prisma/client";
 
 export async function POST(req: Request) {
   try {
@@ -55,15 +56,29 @@ export async function POST(req: Request) {
     }
 
     // Block if there is already an active trade between these two users
-    const existingTrade = await prisma.trade.findFirst({
-      where: {
-        status: { notIn: ["COMPLETED", "DECLINED"] },
-        OR: [
-          { senderId: decoded.id,        receiverId: Number(receiverId) },
-          { senderId: Number(receiverId), receiverId: decoded.id },
-        ],
+  const ACTIVE_STATUSES: TradeStatus[] = [
+  TradeStatus.PENDING,
+  TradeStatus.ACCEPTED,
+  TradeStatus.DEPOSIT_PAID,
+  TradeStatus.CARDS_SENT,
+];
+
+const existingTrade = await prisma.trade.findFirst({
+  where: {
+    OR: [
+      {
+        senderId: decoded.id,
+        receiverId: Number(receiverId),
+        status: { in: ACTIVE_STATUSES },
       },
-    });
+      {
+        senderId: Number(receiverId),
+        receiverId: decoded.id,
+        status: { in: ACTIVE_STATUSES },
+      },
+    ],
+  },
+});
 
     if (existingTrade) {
       return NextResponse.json(
@@ -80,7 +95,7 @@ export async function POST(req: Request) {
           receiverId:      Number(receiverId),
           offeredCardId:   Number(offeredCardId),
           requestedCardId: Number(requestedCardId),
-          status: "PENDING",
+          status: TradeStatus.PENDING,
         },
       });
 

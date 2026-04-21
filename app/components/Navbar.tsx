@@ -124,6 +124,8 @@ export default function Navbar({ user }: NavbarProps) {
 
           {user && <NavLink href="/trading">Trading</NavLink>}
 
+          {user && <NavLink href="/trades/history">Trade History</NavLink>}
+
           {user ? (
             <>
               <NavLink href="/profile">
@@ -170,6 +172,8 @@ export default function Navbar({ user }: NavbarProps) {
           )}
 
           {user && <NavLink href="/trading">Trading</NavLink>}
+
+          {user && <NavLink href="/trades/history">Trade History</NavLink>}
 
           {user ? (
             <>

@@ -38,7 +38,7 @@ export async function GET(
     }
 
     // Only participants can see the trade
-    if (trade.initiatorId !== decoded.id && trade.receiverId !== decoded.id) {
+    if (trade.senderId !== decoded.id && trade.receiverId !== decoded.id) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
