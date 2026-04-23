@@ -156,7 +156,7 @@ export default function TradingPage() {
                     href={`/messages/${listing.user.id}?card=${listing.card.id}`}
                     className="bg-white text-pink-600 px-4 py-2 rounded-xl text-sm shadow"
                   >
-                    Message Seller
+                    Message Trader
                   </Link>
                 </div>
               </div>

@@ -78,8 +78,8 @@ export async function GET() {
       theyHaveWhatIWant,
     };
   })
-  .filter(u => u.theyHaveWhatIWant > 0) // 🔥 key filter
-  .filter(u => u.score >= 2)            // 🔥 quality threshold
+  .filter(u => u.theyHaveWhatIWant > 0)
+  .filter(u => u.score >= 2)
   .sort((a, b) => b.score - a.score);
 
   // 5. Sort best matches first
