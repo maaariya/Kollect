@@ -19,12 +19,15 @@ type Listing = {
   };
 };
 
+const CARDS_PER_PAGE = 12;
+
 export default function TradingPage() {
   const [listings, setListings] = useState<Listing[]>([]);
   const [filtered, setFiltered] = useState<Listing[]>([]);
   const [wishlistIds, setWishlistIds] = useState<number[]>([]);
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
+  const [page, setPage] = useState(1);
 
   useEffect(() => {
     async function loadData() {
@@ -58,7 +61,14 @@ export default function TradingPage() {
     );
 
     setFiltered(results);
+    setPage(1);
   }, [search, listings]);
+
+  const totalPages = Math.max(1, Math.ceil(filtered.length / CARDS_PER_PAGE));
+  const currentListings = filtered.slice(
+    (page - 1) * CARDS_PER_PAGE,
+    page * CARDS_PER_PAGE
+  );
 
   return (
     <div className="p-6 min-h-screen bg-primary-light font-cute">
@@ -89,7 +99,7 @@ export default function TradingPage() {
         )}
 
         <div className="flex flex-wrap gap-y-6 gap-x-3 justify-center">
-          {filtered.map((listing) => {
+          {currentListings.map((listing) => {
             const wishlistMatch = wishlistIds.includes(
               listing.card.id
             );
@@ -162,6 +172,29 @@ export default function TradingPage() {
               </div>
             );
           })}
+        </div>
+
+        {/* Pagination */}
+        <div className="flex justify-center items-center gap-4 mt-8">
+          <button
+            disabled={page === 1}
+            onClick={() => setPage((p) => p - 1)}
+            className="px-4 py-2 rounded-xl bg-pink-400 text-white disabled:opacity-40"
+          >
+            ←
+          </button>
+
+          <span className="font-semibold text-pink-700">
+            Page {page} / {totalPages}
+          </span>
+
+          <button
+            disabled={page === totalPages}
+            onClick={() => setPage((p) => p + 1)}
+            className="px-4 py-2 rounded-xl bg-pink-400 text-white disabled:opacity-40"
+          >
+            →
+          </button>
         </div>
       </div>
     </div>

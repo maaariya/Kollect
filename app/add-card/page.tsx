@@ -11,11 +11,14 @@ type Card = {
   image: string | null;
 };
 
+const CARDS_PER_PAGE = 12;
+
 export default function AddCardPage() {
   const [cards, setCards] = useState<Card[]>([]);
   const [message, setMessage] = useState("");
   const [search, setSearch] = useState("");
   const [filterBy, setFilterBy] = useState("all");
+  const [page, setPage] = useState(1);
 
   // Load all available cards
   useEffect(() => {
@@ -75,6 +78,12 @@ export default function AddCardPage() {
       .includes(term);
   });
 
+  const totalPages = Math.max(1, Math.ceil(filteredCards.length / CARDS_PER_PAGE));
+  const currentCards = filteredCards.slice(
+    (page - 1) * CARDS_PER_PAGE,
+    page * CARDS_PER_PAGE
+  );
+
   return (
     <div className="p-6 min-h-screen bg-primary-light font-cute">
       <h1 className="text-4xl text-center text-pink-dark mb-6 font-bold">
@@ -94,13 +103,13 @@ export default function AddCardPage() {
           placeholder="Search group, member, album..."
           className="px-3 py-2 border rounded-xl bg-white shadow text-sm w-64"
           value={search}
-          onChange={(e) => setSearch(e.target.value)}
+          onChange={(e) => { setSearch(e.target.value); setPage(1); }}
         />
 
         <select
           className="px-3 py-2 border rounded-xl bg-white shadow text-sm"
           value={filterBy}
-          onChange={(e) => setFilterBy(e.target.value)}
+          onChange={(e) => { setFilterBy(e.target.value); setPage(1); }}
         >
           <option value="all">All</option>
           <option value="group">Group</option>
@@ -111,7 +120,7 @@ export default function AddCardPage() {
 
       {/* Cards Grid */}
       <div className="flex flex-wrap gap-y-6 gap-x-3">
-        {filteredCards.map((card) => (
+        {currentCards.map((card) => (
           <div
             key={card.id}
             className="flex-shrink-0 w-40 flex flex-col items-center 
@@ -147,6 +156,29 @@ export default function AddCardPage() {
             </button>
           </div>
         ))}
+      </div>
+
+      {/* Pagination */}
+      <div className="flex justify-center items-center gap-4 mt-8">
+        <button
+          disabled={page === 1}
+          onClick={() => setPage((p) => p - 1)}
+          className="px-4 py-2 rounded-xl bg-pink-400 text-white disabled:opacity-40"
+        >
+          ←
+        </button>
+
+        <span className="font-semibold text-pink-700">
+          Page {page} / {totalPages}
+        </span>
+
+        <button
+          disabled={page === totalPages}
+          onClick={() => setPage((p) => p + 1)}
+          className="px-4 py-2 rounded-xl bg-pink-400 text-white disabled:opacity-40"
+        >
+          →
+        </button>
       </div>
     </div>
   );
