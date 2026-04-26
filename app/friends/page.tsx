@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import Link from "next/link";
 
 export default function FriendsPage() {
   const [query, setQuery] = useState("");
@@ -163,6 +164,14 @@ export default function FriendsPage() {
           </ul>
         )}
       </div>
+
+      {/* Find Traders */}
+      <Link
+        href="/recommendations"
+        className="mt-4 mb-6 flex items-center justify-center gap-2 w-full py-3 bg-yellow-400 hover:bg-yellow-500 text-white font-bold rounded-xl shadow-md transition text-base"
+      >
+        ✦ Find Traders - view your perfect matches!
+      </Link>
 
       {/* Search Users */}
       <div className="mt-6">
