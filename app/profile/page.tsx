@@ -205,7 +205,7 @@ export default function ProfilePage() {
           </p>
         ) : (
           <>
-            <div className="flex flex-wrap gap-y-6 gap-x-3 justify-center">
+            <div className="flex flex-wrap gap-y-6 gap-x-3 justify-center mb-4">
               {currentCollection.map((card) => (
                 <div
                   key={card.id}
@@ -255,6 +255,28 @@ export default function ProfilePage() {
                 </div>
               ))}
             </div>
+
+            {collectionTotalPages > 1 && (
+              <div className="flex justify-center items-center gap-4 mt-2">
+                <button
+                  disabled={collectionPage === 1}
+                  onClick={() => setCollectionPage((p) => p - 1)}
+                  className="px-4 py-2 rounded-xl bg-pink-400 text-white disabled:opacity-40"
+                >
+                  ←
+                </button>
+                <span className="font-semibold text-pink-700">
+                  Page {collectionPage} / {collectionTotalPages}
+                </span>
+                <button
+                  disabled={collectionPage === collectionTotalPages}
+                  onClick={() => setCollectionPage((p) => p + 1)}
+                  className="px-4 py-2 rounded-xl bg-pink-400 text-white disabled:opacity-40"
+                >
+                  →
+                </button>
+              </div>
+            )}
           </>
         )}
       </section>
@@ -271,7 +293,7 @@ export default function ProfilePage() {
           </p>
         ) : (
           <>
-            <div className="flex flex-wrap gap-y-6 gap-x-3 justify-center">
+            <div className="flex flex-wrap gap-y-6 gap-x-3 justify-center mb-4">
               {currentTrading.map((card) => (
                 <div
                   key={card.id}
@@ -310,6 +332,28 @@ export default function ProfilePage() {
                 </div>
               ))}
             </div>
+
+            {tradingTotalPages > 1 && (
+              <div className="flex justify-center items-center gap-4 mt-2">
+                <button
+                  disabled={tradingPage === 1}
+                  onClick={() => setTradingPage((p) => p - 1)}
+                  className="px-4 py-2 rounded-xl bg-pink-400 text-white disabled:opacity-40"
+                >
+                  ←
+                </button>
+                <span className="font-semibold text-pink-700">
+                  Page {tradingPage} / {tradingTotalPages}
+                </span>
+                <button
+                  disabled={tradingPage === tradingTotalPages}
+                  onClick={() => setTradingPage((p) => p + 1)}
+                  className="px-4 py-2 rounded-xl bg-pink-400 text-white disabled:opacity-40"
+                >
+                  →
+                </button>
+              </div>
+            )}
           </>
         )}
       </section>
@@ -325,7 +369,8 @@ export default function ProfilePage() {
             Your wishlist is empty.
           </p>
         ) : (
-          <div className="flex flex-wrap gap-y-6 gap-x-3 justify-center">
+          <>
+          <div className="flex flex-wrap gap-y-6 gap-x-3 justify-center mb-4">
             {currentWishlist.map((card) => (
               <div
                 key={card.id}
@@ -364,6 +409,29 @@ export default function ProfilePage() {
               </div>
             ))}
           </div>
+
+          {wishlistTotalPages > 1 && (
+            <div className="flex justify-center items-center gap-4 mt-2">
+              <button
+                disabled={wishlistPage === 1}
+                onClick={() => setWishlistPage((p) => p - 1)}
+                className="px-4 py-2 rounded-xl bg-pink-400 text-white disabled:opacity-40"
+              >
+                ←
+              </button>
+              <span className="font-semibold text-pink-700">
+                Page {wishlistPage} / {wishlistTotalPages}
+              </span>
+              <button
+                disabled={wishlistPage === wishlistTotalPages}
+                onClick={() => setWishlistPage((p) => p + 1)}
+                className="px-4 py-2 rounded-xl bg-pink-400 text-white disabled:opacity-40"
+              >
+                →
+              </button>
+            </div>
+          )}
+          </>
         )}
       </section>
     </div>
