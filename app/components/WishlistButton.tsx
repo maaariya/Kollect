@@ -10,34 +10,23 @@ export default function WishlistButton({ cardId }: Props) {
   const [isWishlisted, setIsWishlisted] = useState(false);
 
   useEffect(() => {
-    const token = localStorage.getItem("token");
-    if (!token) return;
-
-    fetch("/api/wishlist", {
-      headers: {
-        Authorization: "Bearer " + token,
-      },
-    })
-      .then(res => res.json())
+    fetch("/api/wishlist")
+      .then(res => (res.ok ? res.json() : []))
       .then(data => {
         if (Array.isArray(data)) {
-          setIsWishlisted(data.some((item) => item.cardId === cardId));
+          setIsWishlisted(data.some((item) => item.card?.id === cardId));
         }
       });
   }, [cardId]);
 
   async function toggleWishlist() {
-    const token = localStorage.getItem("token");
-    if (!token) return alert("Please log in");
-
     const res = await fetch("/api/wishlist", {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: "Bearer " + token,
-      },
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ cardId }),
     });
+
+    if (res.status === 401) return alert("Please log in");
 
     const data = await res.json();
     setIsWishlisted(data.wishlisted);

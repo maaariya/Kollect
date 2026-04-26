@@ -1,6 +1,9 @@
+// app/api/recommendations/route.ts
+
 import { prisma } from "@/lib/prisma";
 import { cookies } from "next/headers";
 import jwt from "jsonwebtoken";
+import { scoreUsers } from "@/lib/matching";
 
 export async function GET() {
   const token = (await cookies()).get("token")?.value;
@@ -25,7 +28,6 @@ export async function GET() {
     where: { userId },
     select: { cardId: true },
   });
-
   const tradingCardIds = myTrading.map(t => t.cardId);
 
   // 2. My wishlist
@@ -33,10 +35,9 @@ export async function GET() {
     where: { userId },
     select: { cardId: true },
   });
-
   const myWishlistIds = myWishlist.map(w => w.cardId);
 
-  // 3. Find matching users
+  // 3. Find pre-filtered candidate users
   const users = await prisma.user.findMany({
     where: {
       id: { not: userId },
@@ -52,38 +53,8 @@ export async function GET() {
     },
   });
 
-  // 4. Score users
-  const scoredUsers = users
-  .map(user => {
-    const theirWishlistIds = user.wishlist.map(w => w.cardId);
-    const theirTradingIds = user.tradingListings.map(t => t.cardId);
-
-    const iHaveWhatTheyWant = theirWishlistIds.filter(id =>
-      tradingCardIds.includes(id)
-    ).length;
-
-    const theyHaveWhatIWant = theirTradingIds.filter(id =>
-      myWishlistIds.includes(id)
-    ).length;
-
-    const score =
-      (iHaveWhatTheyWant * 1) +
-      (theyHaveWhatIWant * 3) +
-      (theirTradingIds.length * 0.2);
-
-    return {
-      user,
-      score,
-      iHaveWhatTheyWant,
-      theyHaveWhatIWant,
-    };
-  })
-  .filter(u => u.theyHaveWhatIWant > 0)
-  .filter(u => u.score >= 2)
-  .sort((a, b) => b.score - a.score);
-
-  // 5. Sort best matches first
-  scoredUsers.sort((a, b) => b.score - a.score);
+  // 4. Score, filter and rank using extracted algorithm
+  const scoredUsers = scoreUsers(tradingCardIds, myWishlistIds, users);
 
   return Response.json(scoredUsers);
 }

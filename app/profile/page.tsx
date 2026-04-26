@@ -22,7 +22,7 @@ export default function ProfilePage() {
 
   const [collectionPage, setCollectionPage] = useState(1);
   const [wishlistPage, setWishlistPage] = useState(1);
-  const [tradingPage, setTradingPage] = useState(1); // ✅ added
+  const [tradingPage, setTradingPage] = useState(1);
 
   useEffect(() => {
     async function loadData() {
@@ -51,6 +51,13 @@ export default function ProfilePage() {
     }
 
     loadData();
+
+    function handleVisibilityChange() {
+      if (!document.hidden) loadData();
+    }
+
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    return () => document.removeEventListener("visibilitychange", handleVisibilityChange);
   }, []);
 
   async function removeFromCollection(cardId: number) {
@@ -140,7 +147,7 @@ export default function ProfilePage() {
     wishlistStart + CARDS_PER_PAGE
   );
 
-  // ✅ TRADING DERIVED STATE (THIS WAS MISSING)
+  // TRADING DERIVED STATE
   const tradingCards = cards.filter((card) => card.isTrading);
 
   const tradingTotalPages = Math.ceil(

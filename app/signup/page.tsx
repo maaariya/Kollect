@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 
 export default function SignupPage() {
   const [form, setForm] = useState({ name: "", email: "", password: "" });
@@ -32,21 +33,25 @@ export default function SignupPage() {
   };
 
   return (
-    <div className="flex justify-center items-center min-h-screen bg-primary-light font-cute">
+    <div className="min-h-screen flex items-center justify-center">
       <form
         onSubmit={handleSubmit}
-        className="flex flex-col gap-4 p-8 rounded-xl-bubble shadow-2xl bg-secondary-light w-96"
+        className="bg-white p-8 rounded-2xl shadow-lg w-full max-w-md"
       >
-        <h1 className="text-3xl font-bold text-pink-dark text-center mb-2">
+        <h1 className="text-3xl font-bold mb-6 text-center text-pink-500">
           Sign Up
         </h1>
+
+        {message && (
+          <p className="text-red-500 mb-4 text-center">{message}</p>
+        )}
 
         <input
           type="text"
           placeholder="Name"
           value={form.name}
           onChange={(e) => setForm({ ...form, name: e.target.value })}
-          className="border-2 border-pink-light rounded-xl-bubble p-3 focus:outline-none focus:ring-2 focus:ring-pink-medium bg-pink-light placeholder-pink-dark"
+          className="w-full mb-4 p-3 border rounded-xl"
           required
         />
 
@@ -55,7 +60,7 @@ export default function SignupPage() {
           placeholder="Email"
           value={form.email}
           onChange={(e) => setForm({ ...form, email: e.target.value })}
-          className="border-2 border-pink-light rounded-xl-bubble p-3 focus:outline-none focus:ring-2 focus:ring-pink-medium bg-pink-light placeholder-pink-dark"
+          className="w-full mb-4 p-3 border rounded-xl"
           required
         />
 
@@ -64,20 +69,23 @@ export default function SignupPage() {
           placeholder="Password"
           value={form.password}
           onChange={(e) => setForm({ ...form, password: e.target.value })}
-          className="border-2 border-pink-light rounded-xl-bubble p-3 focus:outline-none focus:ring-2 focus:ring-pink-medium bg-pink-light placeholder-pink-dark"
+          className="w-full mb-6 p-3 border rounded-xl"
           required
         />
 
         <button
           disabled={loading}
-          className="bg-pink-medium text-white rounded-xl-bubble p-3 hover:bg-pink-light shadow-lg transition-colors duration-200"
+          className="w-full bg-pink-500 text-white py-3 rounded-xl hover:bg-pink-600 transition disabled:opacity-60"
         >
           {loading ? "Signing up..." : "Sign Up"}
         </button>
 
-        {message && (
-          <p className="text-center text-pink-dark font-semibold mt-2">{message}</p>
-        )}
+        <p className="mt-4 text-center text-sm text-gray-500">
+          Already have an account?{" "}
+          <Link href="/login" className="text-pink-500 hover:underline">
+            Login here
+          </Link>
+        </p>
       </form>
     </div>
   );

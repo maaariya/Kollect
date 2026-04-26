@@ -1,7 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import jwt from "jsonwebtoken";
 import { cookies } from "next/headers";
-import { notify } from "@/lib/notify";
 
 export async function POST(req: Request) {
   const cookieStore = await cookies();
@@ -59,35 +58,18 @@ export async function POST(req: Request) {
     return Response.json({ error: "PayPal capture failed" }, { status: 500 });
   }
 
-  const trade = await prisma.trade.findUnique({
-    where: { id: tradeId },
-    include: {
-      sender:   { select: { name: true } },
-      receiver: { select: { name: true } },
-    },
-  });
+  const trade = await prisma.trade.findUnique({ where: { id: tradeId } });
 
   if (!trade) {
     return Response.json({ error: "not found" }, { status: 404 });
   }
 
-  const isSender     = trade.senderId === decoded.id;
-  const payerName    = isSender ? trade.sender.name : trade.receiver.name;
-  const otherUserId  = isSender ? trade.receiverId  : trade.senderId;
+  const isSender = trade.senderId === decoded.id;
 
   await prisma.trade.update({
     where: { id: tradeId },
     data: isSender ? { senderDepositPaid: true } : { receiverDepositPaid: true },
   });
-
-  // Notify the other user that a deposit was paid
-  await notify(
-    otherUserId,
-    "TRADE_DEPOSIT",
-    "Deposit received",
-    `${payerName} paid their deposit. Pay yours to proceed.`,
-    `/messages/${decoded.id}`,
-  );
 
   const updated = await prisma.trade.findUnique({ where: { id: tradeId } });
 

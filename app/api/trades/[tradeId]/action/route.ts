@@ -1,14 +1,17 @@
+// app/api/trades/[tradeId]/action/route.ts
+
 import { prisma } from "@/lib/prisma";
 import { cookies } from "next/headers";
 import jwt from "jsonwebtoken";
-import { notify } from "@/lib/notify";
+import { applyTradeAction } from "@/lib/trade";
 
 export async function POST(
   req: Request,
-  { params }: { params: { tradeId: string } }
+  { params }: { params: Promise<{ tradeId: string }> }
 ) {
   try {
-    const tradeId = Number(params.tradeId);
+    const { tradeId: tradeIdStr } = await params;
+    const tradeId = Number(tradeIdStr);
     const { action } = await req.json();
 
     const token = (await cookies()).get("token")?.value;
@@ -18,141 +21,81 @@ export async function POST(
 
     const decoded = jwt.verify(token, process.env.JWT_SECRET!) as { id: number };
 
-    const trade = await prisma.trade.findUnique({
-      where: { id: tradeId },
-      include: {
-        sender:   { select: { name: true } },
-        receiver: { select: { name: true } },
-      },
-    });
-
+    const trade = await prisma.trade.findUnique({ where: { id: tradeId } });
     if (!trade) {
       return Response.json({ error: "not found" }, { status: 404 });
     }
 
-    const isSender   = trade.senderId   === decoded.id;
-    const isReceiver = trade.receiverId === decoded.id;
+    // Apply pure state machine logic
+    const result = applyTradeAction(trade, decoded.id, action);
 
-    if (!isSender && !isReceiver) {
-      return Response.json({ error: "forbidden" }, { status: 403 });
+    if ("error" in result) {
+      return Response.json({ error: result.error }, { status: result.status });
     }
 
-    const senderName   = trade.sender.name;
-    const receiverName = trade.receiver.name;
-    const tradeLink    = `/messages/${isSender ? trade.receiverId : trade.senderId}`;
-
-    /* ───────── ACCEPT ───────── */
-    if (action === "accept") {
-      if (!isReceiver) return Response.json({ error: "only receiver can accept" }, { status: 403 });
-      if (trade.status !== "PENDING") return Response.json({ error: "trade is not pending" }, { status: 400 });
-
-      await prisma.trade.update({ where: { id: tradeId }, data: { status: "ACCEPTED" } });
-
-      await notify(
-        trade.senderId,
-        "TRADE_ACCEPTED",
-        "Trade accepted!",
-        `${receiverName} accepted your trade proposal. Pay your deposit to proceed.`,
-        tradeLink,
-      );
-
-      return Response.json({ success: true });
-    }
-
-    /* ───────── DECLINE ───────── */
-    if (action === "decline") {
-      if (trade.status !== "PENDING") return Response.json({ error: "trade is not pending" }, { status: 400 });
-
-      await prisma.trade.update({ where: { id: tradeId }, data: { status: "DECLINED" } });
-
-      // Notify the sender; if the receiver declined, notify sender — if sender cancelled, notify receiver
-      const notifyUserId = isSender ? trade.receiverId : trade.senderId;
-      const declinerName = isSender ? senderName : receiverName;
-
-      await notify(
-        notifyUserId,
-        "TRADE_DECLINED",
-        "Trade declined",
-        `${declinerName} declined the trade proposal.`,
-        `/messages/${decoded.id}`,
-      );
-
-      return Response.json({ success: true });
-    }
-
-    /* ───────── MARK CARD SENT ───────── */
-    if (action === "mark_sent") {
+    // Apply flag update if any
+    if (result.flagUpdate) {
       await prisma.trade.update({
         where: { id: tradeId },
-        data: isSender ? { senderCardSent: true } : { receiverCardSent: true },
+        data: result.flagUpdate,
       });
-
-      const updated = await prisma.trade.findUnique({ where: { id: tradeId } });
-
-      if (updated?.senderCardSent && updated.receiverCardSent) {
-        await prisma.trade.update({ where: { id: tradeId }, data: { status: "CARDS_SENT" } });
-      }
-
-      // Notify the other person that a card is on the way
-      const otherUserId  = isSender ? trade.receiverId : trade.senderId;
-      const senderOfCard = isSender ? senderName : receiverName;
-
-      await notify(
-        otherUserId,
-        "TRADE_CARD_SENT",
-        "Card on its way!",
-        `${senderOfCard} has marked their card as sent. Confirm once yours arrives.`,
-        tradeLink,
-      );
-
-      return Response.json({ success: true });
     }
 
-    /* ───────── CONFIRM RECEIVED ───────── */
-    if (action === "confirm_received") {
+    // Apply status transition if triggered.
+    // DISPUTED lands here too — no card transfer, no escrow release, status update only.
+    if (result.nextStatus && result.nextStatus !== "COMPLETED") {
       await prisma.trade.update({
         where: { id: tradeId },
-        data: isSender ? { senderConfirmed: true } : { receiverConfirmed: true },
+        data: { status: result.nextStatus },
       });
+    }
 
-      const updated = await prisma.trade.findUnique({ where: { id: tradeId } });
-
-      if (updated?.senderConfirmed && updated.receiverConfirmed) {
-        await prisma.$transaction(async (tx) => {
-          await tx.userCard.deleteMany({ where: { userId: trade.senderId,   cardId: trade.offeredCardId   } });
-          await tx.userCard.createMany({ data: [{ userId: trade.receiverId, cardId: trade.offeredCardId   }], skipDuplicates: true });
-          await tx.userCard.deleteMany({ where: { userId: trade.receiverId, cardId: trade.requestedCardId } });
-          await tx.userCard.createMany({ data: [{ userId: trade.senderId,   cardId: trade.requestedCardId }], skipDuplicates: true });
-          await tx.trade.update({ where: { id: tradeId }, data: { status: "COMPLETED" } });
+    // COMPLETED requires atomic card transfer transaction
+    if (result.nextStatus === "COMPLETED") {
+      await prisma.$transaction(async (tx) => {
+        // Transfer offeredCard: sender → receiver
+        await tx.userCard.deleteMany({
+          where: { userId: trade.senderId, cardId: trade.offeredCardId },
+        });
+        await tx.userCard.createMany({
+          data: [{ userId: trade.receiverId, cardId: trade.offeredCardId }],
+          skipDuplicates: true,
         });
 
-        // Notify the OTHER user (current user already knows they just confirmed)
-        const otherUserId = isSender ? trade.receiverId : trade.senderId;
-        await notify(
-          otherUserId,
-          "TRADE_COMPLETED",
-          "Trade complete! 🎉",
-          `Your trade with ${isSender ? receiverName : senderName} is done. Enjoy your new card!`,
-          `/messages/${decoded.id}`,
-        );
-      } else {
-        // One side confirmed — nudge the other to confirm
-        const otherUserId   = isSender ? trade.receiverId : trade.senderId;
-        const confirmerName = isSender ? senderName : receiverName;
+        // Transfer requestedCard: receiver → sender
+        await tx.userCard.deleteMany({
+          where: { userId: trade.receiverId, cardId: trade.requestedCardId },
+        });
+        await tx.userCard.createMany({
+          data: [{ userId: trade.senderId, cardId: trade.requestedCardId }],
+          skipDuplicates: true,
+        });
 
-        await notify(
-          otherUserId,
-          "TRADE_CONFIRM_PENDING",
-          "Confirm your card received",
-          `${confirmerName} confirmed receipt — confirm yours to complete the trade.`,
-          tradeLink,
-        );
-      }
+        // Remove both cards from the marketplace for their previous owners
+        await tx.tradingListing.deleteMany({
+          where: { userId: trade.senderId, cardId: trade.offeredCardId },
+        });
+        await tx.tradingListing.deleteMany({
+          where: { userId: trade.receiverId, cardId: trade.requestedCardId },
+        });
 
-      return Response.json({ success: true });
+        await tx.trade.update({
+          where: { id: tradeId },
+          data: { status: "COMPLETED" },
+        });
+
+        await tx.message.create({
+          data: {
+            senderId: trade.senderId,
+            receiverId: trade.receiverId,
+            content: "Your deposits have been released. Trade complete!",
+            tradeId,
+          },
+        });
+      });
     }
 
-    return Response.json({ error: "invalid action" }, { status: 400 });
+    return Response.json({ success: true });
   } catch (err) {
     console.error("[trade/action]", err);
     return Response.json({ error: String(err) }, { status: 500 });

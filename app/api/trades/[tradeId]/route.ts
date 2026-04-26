@@ -9,9 +9,10 @@ import { NextResponse } from "next/server";
 
 export async function GET(
   _req: Request,
-  { params }: { params: { tradeId: string } }
+  { params }: { params: Promise<{ tradeId: string }> }
 ) {
   try {
+    const { tradeId: tradeIdStr } = await params;
     const cookieStore = await cookies();
     const token = cookieStore.get("token")?.value;
 
@@ -23,7 +24,7 @@ export async function GET(
       id: number;
     };
 
-    const tradeId = Number(params.tradeId);
+    const tradeId = Number(tradeIdStr);
 
     const trade = await prisma.trade.findUnique({
       where: { id: tradeId },

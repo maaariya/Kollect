@@ -32,7 +32,7 @@ export default function AddCardPage() {
     load();
   }, []);
 
-  // ✅ Cookie-based add
+  // Cookie-based add
   async function addToCollection(cardId: number) {
     setMessage("");
 

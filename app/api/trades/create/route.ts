@@ -25,6 +25,10 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Missing fields" }, { status: 400 });
     }
 
+    if (decoded.id === Number(receiverId)) {
+      return NextResponse.json({ error: "You can't trade with yourself" }, { status: 400 });
+    }
+
     // Verify the offered card belongs to the current user (via UserCard join table)
     const offeredCard = await prisma.userCard.findFirst({
       where: {
@@ -103,7 +107,7 @@ const existingTrade = await prisma.trade.findFirst({
         data: {
           senderId:   decoded.id,
           receiverId: Number(receiverId),
-          content:    "📦 A trade proposal was sent.",
+          content:    "A trade proposal was sent.",
           tradeId:    newTrade.id,
         },
       });

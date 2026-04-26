@@ -20,13 +20,14 @@ function getUserIdFromRequest(req: Request): number | null {
 
 export async function GET(
   req: Request,
-  { params }: { params: { cardId: string } }
+  { params }: { params: Promise<{ cardId: string }> }
 ) {
+  const { cardId } = await params;
   const userId = getUserIdFromRequest(req);
   if (!userId) return NextResponse.json({ wishlisted: false });
 
   const existing = await prisma.wishlistCard.findFirst({
-    where: { userId, cardId: Number(params.cardId) },
+    where: { userId, cardId: Number(cardId) },
   });
 
   return NextResponse.json({ wishlisted: !!existing });

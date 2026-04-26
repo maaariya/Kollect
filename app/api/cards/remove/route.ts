@@ -2,24 +2,20 @@ import { prisma } from "@/lib/prisma";
 import { NextResponse } from "next/server";
 import jwt from "jsonwebtoken";
 
-const JWT_SECRET = process.env.JWT_SECRET!;
-
-function getUserId(req: Request): number | null {
-  const auth = req.headers.get("authorization");
-  if (!auth) return null;
-
-  try {
-    const token = auth.replace("Bearer ", "");
-    const decoded = jwt.verify(token, JWT_SECRET) as { id: number };
-    return decoded.id;
-  } catch {
-    return null;
-  }
-}
-
 export async function POST(req: Request) {
-  const userId = getUserId(req);
-  if (!userId) {
+  const cookieHeader = req.headers.get("cookie") || "";
+  const match = cookieHeader.match(/token=([^;]+)/);
+  const token = match?.[1];
+
+  if (!token) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  let userId: number;
+  try {
+    const decoded = jwt.verify(token, process.env.JWT_SECRET!) as { id: number };
+    userId = decoded.id;
+  } catch {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 

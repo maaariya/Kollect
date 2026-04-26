@@ -28,7 +28,8 @@ type TradeStatus =
   | "DEPOSIT_PAID"
   | "CARDS_SENT"
   | "COMPLETED"
-  | "DECLINED";
+  | "DECLINED"
+  | "DISPUTED";
 
 type Trade = {
   id: number;
@@ -61,6 +62,7 @@ export default function MessagesPage() {
   const [activeTrade, setActiveTrade] = useState<Trade | null>(null);
   const [selectedCardId, setSelectedCardId] = useState<number | null>(null);
   const [busy, setBusy] = useState(false);
+  const [tradeError, setTradeError] = useState<string | null>(null);
 
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
   const bottomRef = useRef<HTMLDivElement | null>(null);
@@ -123,16 +125,34 @@ export default function MessagesPage() {
 
   async function createTrade() {
     if (!selectedCardId || !requestedCardId || busy) return;
+    if (myId !== null && userId === myId) {
+      setTradeError("You can't trade with yourself.");
+      return;
+    }
     setBusy(true);
-    await safeFetch("/api/trades/create", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        receiverId: userId,
-        requestedCardId: Number(requestedCardId),
-        offeredCardId: selectedCardId,
-      }),
-    });
+    setTradeError(null);
+    try {
+      const res = await fetch("/api/trades/create", {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          receiverId: userId,
+          requestedCardId: Number(requestedCardId),
+          offeredCardId: selectedCardId,
+        }),
+      });
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        setTradeError(body.error ?? "Could not create trade. Please try again.");
+        setBusy(false);
+        return;
+      }
+    } catch {
+      setTradeError("Network error. Please try again.");
+      setBusy(false);
+      return;
+    }
     setSelectedCardId(null);
     await loadTrade();
     setBusy(false);
@@ -209,6 +229,9 @@ export default function MessagesPage() {
           >
             {busy ? "Sending…" : "Propose Trade"}
           </button>
+          {tradeError && (
+            <p className="mt-2 text-xs text-red-500">{tradeError}</p>
+          )}
         </div>
       )}
 
@@ -305,19 +328,28 @@ export default function MessagesPage() {
 
           {/* ── Step 3: Send cards ── */}
           {activeTrade.status === "DEPOSIT_PAID" && (
-            myCardSent ? (
-              <p className="text-sm text-gray-500 text-center">
-                ✔ Card sent — waiting for the other user to send theirs…
-              </p>
-            ) : (
+            <div className="space-y-2">
+              {myCardSent ? (
+                <p className="text-sm text-gray-500 text-center">
+                  ✔ Card sent — waiting for the other user to send theirs…
+                </p>
+              ) : (
+                <button
+                  disabled={busy}
+                  onClick={() => handleAction("mark_sent")}
+                  className="w-full py-2 bg-pink-500 text-white rounded-xl text-sm font-medium disabled:opacity-40"
+                >
+                  Mark My Card as Sent
+                </button>
+              )}
               <button
                 disabled={busy}
-                onClick={() => handleAction("mark_sent")}
-                className="w-full py-2 bg-pink-500 text-white rounded-xl text-sm font-medium disabled:opacity-40"
+                onClick={() => handleAction("dispute")}
+                className="w-full py-2 bg-red-600 text-white rounded-xl text-sm font-semibold disabled:opacity-40 border border-red-700"
               >
-                Mark My Card as Sent
+                Dispute Trade
               </button>
-            )
+            </div>
           )}
 
           {/* ── Step 4: Confirm receipt ── */}
@@ -340,7 +372,7 @@ export default function MessagesPage() {
           {/* ── Done ── */}
           {activeTrade.status === "COMPLETED" && (
             <p className="text-green-600 font-semibold text-center">
-              🎉 Trade complete! You can propose a new trade whenever you like.
+              Trade complete! You can propose a new trade whenever you like.
             </p>
           )}
 
@@ -348,6 +380,13 @@ export default function MessagesPage() {
           {activeTrade.status === "DECLINED" && (
             <p className="text-red-400 text-sm text-center">
               Trade declined. You can propose a new one.
+            </p>
+          )}
+
+          {/* ── Disputed ── */}
+          {activeTrade.status === "DISPUTED" && (
+            <p className="text-red-600 font-semibold text-center">
+              Trade disputed. An admin will review this trade.
             </p>
           )}
 

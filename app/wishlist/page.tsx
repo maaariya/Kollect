@@ -25,17 +25,16 @@ export default function WishlistPage() {
   const [message, setMessage] = useState("");
 
   useEffect(() => {
-    const token = localStorage.getItem("token");
-    if (!token) {
-      setMessage("You must be logged in to view your wishlist.");
-      return;
-    }
-
-    fetch("/api/wishlist", {
-      headers: { Authorization: "Bearer " + token },
-    })
-      .then((res) => res.json())
+    fetch("/api/wishlist")
+      .then((res) => {
+        if (res.status === 401) {
+          setMessage("You must be logged in to view your wishlist.");
+          return null;
+        }
+        return res.json();
+      })
       .then((data) => {
+        if (!data) return;
         if (Array.isArray(data)) {
           setWishlist(data);
         } else {
@@ -54,22 +53,13 @@ export default function WishlistPage() {
   const currentCards = wishlist.slice(start, start + CARDS_PER_PAGE);
 
   async function moveToCollection(cardId: number) {
-    const token = localStorage.getItem("token");
-    if (!token) return;
-
     await fetch("/api/cards/add", {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: "Bearer " + token,
-      },
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ cardId }),
     });
 
-    await fetch(`/api/wishlist/${cardId}`, {
-      method: "DELETE",
-      headers: { Authorization: "Bearer " + token },
-    });
+    await fetch(`/api/wishlist/${cardId}`, { method: "DELETE" });
 
     setWishlist((prev) => prev.filter((w) => w.card.id !== cardId));
   }

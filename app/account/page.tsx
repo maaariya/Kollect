@@ -14,17 +14,16 @@ export default function AccountPage() {
   const [message, setMessage] = useState("");
 
   useEffect(() => {
-    const token = localStorage.getItem("token");
-    if (!token) {
-      setMessage("You must be logged in.");
-      return;
-    }
-
-    fetch("/api/users/me", {
-      headers: { Authorization: "Bearer " + token },
-    })
-      .then((res) => res.json())
+    fetch("/api/users/me")
+      .then((res) => {
+        if (res.status === 401) {
+          setMessage("You must be logged in.");
+          return null;
+        }
+        return res.json();
+      })
       .then((data) => {
+        if (!data) return;
         if (data.user) {
           setForm({
             name: data.user.name || "",
@@ -46,15 +45,9 @@ export default function AccountPage() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
 
-    const token = localStorage.getItem("token");
-    if (!token) return;
-
     const res = await fetch("/api/users/update", {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: "Bearer " + token,
-      },
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify(form),
     });
 

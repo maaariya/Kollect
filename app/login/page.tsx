@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -31,7 +32,7 @@ export default function LoginPage() {
         return;
       }
 
-      // 🔥 THIS IS THE IMPORTANT PART
+      // Force server layout to re-read cookies
       router.refresh();   // forces server layout to re-read cookies
       router.push("/");   // navigate after refresh
     } catch (err) {
@@ -77,6 +78,13 @@ export default function LoginPage() {
         >
           Login
         </button>
+
+        <p className="mt-4 text-center text-sm text-gray-500">
+          Don't have an account?{" "}
+          <Link href="/signup" className="text-pink-500 hover:underline">
+            Sign up here
+          </Link>
+        </p>
       </form>
     </div>
   );

@@ -9,17 +9,18 @@ export const dynamic = "force-dynamic";
 export default async function PublicProfile({
   params,
 }: {
-  params: { id: string };
+params: Promise<{ id: string }>;
 }) {
-  const profileId = Number(params.id);
-
-  // ✅ Fetch user INCLUDING trading listings
+  const { id } = await params;
+  const profileId = Number(id);
+  
+  // Fetch user INCLUDING trading listings
   const user = await prisma.user.findUnique({
     where: { id: profileId },
     include: {
       cards: { include: { card: true } },
       wishlist: { include: { card: true } },
-      tradingListings: { include: { card: true } }, // ✅ added
+      tradingListings: { include: { card: true } },
       receivedFriendRequests: true,
       sentFriendRequests: true,
     },
@@ -97,7 +98,7 @@ export default async function PublicProfile({
                 <p className="text-sm text-gray-500">Wishlist</p>
               </div>
 
-              {/* ✅ NEW: Trading count */}
+              {/* Trading count */}
               <div>
                 <p className="text-2xl font-bold text-pink-600">
                   {user.tradingListings.length}

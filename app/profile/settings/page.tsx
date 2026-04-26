@@ -16,7 +16,7 @@ export default function ProfileSettingsPage() {
   const [message, setMessage] = useState("");
   const router = useRouter();
 
-  // ✅ Load user using cookie auth
+  // Load user using cookie auth
   useEffect(() => {
     async function loadUser() {
       try {
@@ -52,7 +52,7 @@ export default function ProfileSettingsPage() {
 
     const res = await fetch("/api/profile/update", {
       method: "POST",
-      credentials: "include", // ✅ cookie auth
+      credentials: "include",
       headers: {
         "Content-Type": "application/json",
       },

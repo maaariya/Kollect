@@ -31,7 +31,7 @@ export async function POST(req: Request) {
 
     const response = NextResponse.json({ success: true });
 
-    // ✅ Store token in HTTP-only cookie
+    // Store token in HTTP-only cookie
     response.cookies.set("token", token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",

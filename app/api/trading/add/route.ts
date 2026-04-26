@@ -2,7 +2,6 @@ import { prisma } from "@/lib/prisma";
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 import jwt from "jsonwebtoken";
-import { notify } from "@/lib/notify";
 
 export async function POST(req: Request) {
   try {
@@ -13,56 +12,57 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const decoded = jwt.verify(token, process.env.JWT_SECRET!) as { id: number };
+    const decoded = jwt.verify(
+      token,
+      process.env.JWT_SECRET!
+    ) as { id: number };
+
     const { cardId } = await req.json();
 
+    // Check ownership THROUGH UserCard table
     const ownsCard = await prisma.userCard.findUnique({
-      where: { userId_cardId: { userId: decoded.id, cardId } },
+      where: {
+        userId_cardId: {
+          userId: decoded.id,
+          cardId: cardId,
+        },
+      },
     });
 
     if (!ownsCard) {
-      return NextResponse.json({ error: "You do not own this card" }, { status: 403 });
+      return NextResponse.json(
+        { error: "You do not own this card" },
+        { status: 403 }
+      );
     }
 
+    // Prevent duplicate trading listing
     const alreadyListed = await prisma.tradingListing.findUnique({
-      where: { userId_cardId: { userId: decoded.id, cardId } },
+      where: {
+        userId_cardId: {
+          userId: decoded.id,
+          cardId: cardId,
+        },
+      },
     });
 
     if (alreadyListed) {
-      return NextResponse.json({ error: "Card already listed for trading" }, { status: 400 });
+      return NextResponse.json(
+        { error: "Card already listed for trading" },
+        { status: 400 }
+      );
     }
 
+    // Create listing
     await prisma.tradingListing.create({
-      data: { userId: decoded.id, cardId },
+      data: {
+        userId: decoded.id,
+        cardId: cardId,
+      },
     });
-
-    // Notify anyone who has this card on their wishlist
-    const [lister, interestedUsers] = await Promise.all([
-      prisma.user.findUnique({ where: { id: decoded.id }, select: { name: true } }),
-      prisma.wishlistCard.findMany({
-        where: { cardId, userId: { not: decoded.id } },
-        select: { userId: true },
-      }),
-    ]);
-
-    const card = await prisma.card.findUnique({
-      where: { id: cardId },
-      select: { name: true },
-    });
-
-    await Promise.all(
-      interestedUsers.map((w) =>
-        notify(
-          w.userId,
-          "RECOMMENDATION",
-          "Card on your wishlist is available!",
-          `${lister?.name ?? "Someone"} just listed "${card?.name ?? "a card"}" for trade.`,
-          "/recommendations",
-        )
-      )
-    );
 
     return NextResponse.json({ success: true });
+
   } catch (err) {
     console.error(err);
     return NextResponse.json({ error: "Server error" }, { status: 500 });

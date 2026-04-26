@@ -1,24 +1,24 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import jwt from "jsonwebtoken";
+import { cookies } from "next/headers";
 
-export async function GET(req: Request) {
+export async function GET() {
   try {
-    const authHeader = req.headers.get("authorization");
+    const cookieStore = await cookies();
+    const token = cookieStore.get("token")?.value;
 
-    if (!authHeader) {
+    if (!token) {
       return NextResponse.json(
         { error: "Missing token" },
         { status: 401 }
       );
     }
 
-    const token = authHeader.replace("Bearer ", "");
-
     let decoded: any;
     try {
       decoded = jwt.verify(token, process.env.JWT_SECRET!);
-    } catch (err) {
+    } catch {
       return NextResponse.json(
         { error: "Invalid or expired token" },
         { status: 401 }
@@ -32,7 +32,7 @@ export async function GET(req: Request) {
       include: {
         cards: {
           include: {
-            card: true, // ⭐ IMPORTANT: load the actual card data
+            card: true,
           },
         },
       },

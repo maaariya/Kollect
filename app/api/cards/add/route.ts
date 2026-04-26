@@ -15,7 +15,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Invalid cardId" }, { status: 400 });
     }
 
-    // ✅ Read token from cookies
+    // Read token from cookies
     const cookieHeader = req.headers.get("cookie") || "";
     const match = cookieHeader.match(/token=([^;]+)/);
     const token = match?.[1];

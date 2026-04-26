@@ -34,10 +34,10 @@ export default function TradingPage() {
       ]);
 
       const tradeData = await tradeRes.json();
-      const user = await meRes.json();
 
-      const wishlistCardIds =
-        user?.wishlist?.map((c: any) => c.id) ?? [];
+      const wishlistCardIds = meRes.ok
+        ? ((await meRes.json())?.wishlist?.map((c: any) => c.id) ?? [])
+        : [];
 
       setListings(tradeData);
       setFiltered(tradeData);

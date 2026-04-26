@@ -38,7 +38,7 @@ export default function RecommendationsPage() {
       
       {/* HEADER */}
       <h1 className="text-3xl font-bold text-pink-600 mb-8">
-        🔍 Best Trade Matches
+        Best Trade Matches
       </h1>
 
       {users.length === 0 ? (
@@ -101,7 +101,7 @@ export default function RecommendationsPage() {
                 {/* THEY WANT */}
                 <div>
                   <p className="text-sm font-semibold text-gray-600 mb-2">
-                    🎁 They want from you
+                    They want from you
                   </p>
 
                   <div className="flex gap-2 flex-wrap">
@@ -119,7 +119,7 @@ export default function RecommendationsPage() {
                 {/* YOU WANT */}
                 <div>
                   <p className="text-sm font-semibold text-gray-600 mb-2">
-                    🔄 You want from them
+                    You want from them
                   </p>
 
                   <div className="flex gap-2 flex-wrap">

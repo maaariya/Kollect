@@ -40,27 +40,16 @@ export default function ProfilePageClient({ user }: Props) {
   const [allCards, setAllCards] = useState<Card[]>([]);
 
   useEffect(() => {
-    const token = localStorage.getItem("token");
-    if (!token) return;
-
     // Fetch user's wishlist
-    fetch("/api/wishlist", {
-      headers: { Authorization: `Bearer ${token}` },
-    })
-      .then((res) => res.json())
-      .then((data) => {
-        const array = Array.isArray(data) ? data : [];
-        setWishlist(array);
-      })
+    fetch(“/api/wishlist”)
+      .then((res) => (res.ok ? res.json() : []))
+      .then((data) => setWishlist(Array.isArray(data) ? data : []))
       .catch(console.error);
 
     // Fetch all cards for “Add to Wishlist” section
-    fetch("/api/cards") // ✅ create this API route to return all cards
+    fetch(“/api/cards”)
       .then((res) => res.json())
-      .then((data) => {
-        const array = Array.isArray(data) ? data : [];
-        setAllCards(array);
-      })
+      .then((data) => setAllCards(Array.isArray(data) ? data : []))
       .catch(console.error);
   }, []);
 
@@ -128,7 +117,7 @@ export default function ProfilePageClient({ user }: Props) {
 
       {/* -------- Wishlist Section -------- */}
       <h2 className="text-2xl font-bold mt-10 mb-4 text-pink-600">
-        ❤️ My Wishlist
+        My Wishlist
       </h2>
 
       {wishlist.length === 0 ? (
@@ -176,7 +165,7 @@ export default function ProfilePageClient({ user }: Props) {
 
       {/* -------- Add to Wishlist Section -------- */}
       <h2 className="text-2xl font-bold mt-10 mb-4 text-pink-600">
-        ➕ Add to Wishlist
+        Add to Wishlist
       </h2>
 
       {availableForWishlist.length === 0 ? (

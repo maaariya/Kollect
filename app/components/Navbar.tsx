@@ -3,7 +3,6 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { Menu, X } from "lucide-react";
-import NotificationBell from "@/app/components/NotificationBell";
 import { useRouter, usePathname } from "next/navigation";
 
 interface NavbarProps {
@@ -142,8 +141,6 @@ export default function Navbar({ user }: NavbarProps) {
                   {wishlistCount}
                 </span>
               </NavLink>
-
-              <NotificationBell />
 
               <button onClick={handleLogout} className="bg-white/20 px-4 py-2 rounded-xl">
                 Logout
